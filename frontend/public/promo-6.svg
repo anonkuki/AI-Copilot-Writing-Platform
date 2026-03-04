@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" fill="none">
+  <rect width="1200" height="720" rx="28" fill="#F8FAFC"/>
+  <path d="M600 150L920 300V430C920 528 818 606 600 660C382 606 280 528 280 430V300L600 150Z" fill="#0F172A" fill-opacity="0.08"/>
+  <path d="M600 220L850 338V424C850 498 771 559 600 602C429 559 350 498 350 424V338L600 220Z" fill="#0F172A" fill-opacity="0.14"/>
+  <path d="M540 412L585 457L670 368" stroke="#0F172A" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="120" y="110" fill="#0F172A" font-size="42" font-family="Arial, sans-serif">安全可靠，金身不败</text>
+</svg>

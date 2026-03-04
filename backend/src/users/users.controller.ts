@@ -1,18 +1,20 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Put,
   Body,
-  UseGuards,
-  Request,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
+  Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UsersService } from './users.service';
 
 @Controller('auth')
 export class UsersController {
@@ -38,21 +40,18 @@ export class UsersController {
 
   @Put('profile')
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@Request() req: any, @Body() data: { name?: string; avatar?: string }) {
-    return this.usersService.updateProfile(req.user.userId, data);
+  async updateProfile(@Request() req: any, @Body() updateProfileDto: UpdateProfileDto) {
+    return this.usersService.updateProfile(req.user.userId, updateProfileDto);
   }
 
   @Put('password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async changePassword(
-    @Request() req: any,
-    @Body() data: { oldPassword: string; newPassword: string },
-  ) {
+  async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto) {
     return this.usersService.changePassword(
       req.user.userId,
-      data.oldPassword,
-      data.newPassword,
+      changePasswordDto.oldPassword,
+      changePasswordDto.newPassword,
     );
   }
 }

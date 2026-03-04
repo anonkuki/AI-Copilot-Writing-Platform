@@ -21,31 +21,15 @@
  */
 
 import { Module } from '@nestjs/common';
-// 引入 AI 服务，处理 AI 相关的业务逻辑
 import { AiService } from './ai.service';
-// 引入 AI 控制器，处理 AI 相关的 HTTP 请求
 import { AiController } from './ai.controller';
-// 引入文档模块，因为 AI 需要读取文档内容
 import { DocumentModule } from '../document/document.module';
+import { PrismaService } from '../prisma.service';
 
-/**
- * AI 模块定义
- */
 @Module({
-  // 导入其他模块
-  // DocumentModule 提供了读取文档的服务
-  // AI 需要访问文档内容来提供智能建议
   imports: [DocumentModule],
-
-  // 提供当前模块的服务
-  // AiService 处理所有 AI 相关的业务逻辑
-  providers: [AiService],
-
-  // 注册控制器
-  // AiController 处理 AI 相关的 API 请求
+  providers: [AiService, PrismaService],
   controllers: [AiController],
-
-  // 导出服务，允许其他模块使用
   exports: [AiService],
 })
 export class AiModule {}

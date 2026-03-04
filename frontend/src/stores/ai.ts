@@ -20,6 +20,9 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// 注意：axios 全局配置 (baseURL + 拦截器) 已在 main.ts 中统一注册
+
 /**
  * AI 响应类型接口
  * 定义 AI 返回数据的结构
@@ -78,7 +81,7 @@ export const useAiStore = defineStore('ai', () => {
 
   /**
    * 向 AI 提问
-   * 调用后端 API POST /api/ai/ask
+   * 调用后端 API POST /ai/ask
    * @param documentId - 文档 ID
    * @param question - 问题内容
    * @param selectedText - 选中的文本（可选）
@@ -87,13 +90,13 @@ export const useAiStore = defineStore('ai', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await axios.post('/api/ai/ask', {
+      const response = await axios.post('/ai/ask', {
         documentId,
         question,
         selectedText,
       });
-      lastResponse.value = response.data;
-      return response.data;
+      lastResponse.value = response.data.data;
+      return response.data.data;
     } catch (err: any) {
       error.value = err.message || 'Failed to get AI response';
       console.error('Error asking AI:', err);
@@ -105,7 +108,7 @@ export const useAiStore = defineStore('ai', () => {
 
   /**
    * 获取 AI 建议
-   * 调用后端 API POST /api/ai/suggest
+   * 调用后端 API POST /ai/suggest
    * @param documentId - 文档 ID
    * @param content - 文档内容或选中文本
    * @param command - 命令类型（continue/improve/fix/summarize）
@@ -114,13 +117,13 @@ export const useAiStore = defineStore('ai', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await axios.post('/api/ai/suggest', {
+      const response = await axios.post('/ai/suggest', {
         documentId,
         content,
         command,
       });
-      lastResponse.value = response.data;
-      return response.data;
+      lastResponse.value = response.data.data;
+      return response.data.data;
     } catch (err: any) {
       error.value = err.message || 'Failed to get AI suggestion';
       console.error('Error getting suggestion:', err);
@@ -188,6 +191,123 @@ export const useAiStore = defineStore('ai', () => {
     return text;
   }
 
+  // ==================== 写作辅助方法 ====================
+
+  /**
+   * 写作辅助 - 生成内容
+   */
+  async function write(
+    bookId: string,
+    content: string,
+    command: string,
+    chapterId?: string,
+    options?: any,
+  ) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await axios.post('/ai/write', {
+        bookId,
+        chapterId,
+        content,
+        command,
+        options,
+      });
+      lastResponse.value = response.data.data;
+      return response.data.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'AI 写作辅助失败';
+      console.error('Error writing:', err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * 文本编辑
+   */
+  async function editText(bookId: string, text: string, action: string, style?: string) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await axios.post('/ai/edit', {
+        bookId,
+        text,
+        action,
+        style,
+      });
+      lastResponse.value = response.data.data;
+      return response.data.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'AI 文本编辑失败';
+      console.error('Error editing text:', err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * 生成大纲
+   */
+  async function generateOutline(
+    bookId: string,
+    title: string,
+    genre?: string,
+    chapterCount?: number,
+    existingOutline?: string,
+  ) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await axios.post('/ai/outline', {
+        bookId,
+        title,
+        genre,
+        chapterCount,
+        existingOutline,
+      });
+      lastResponse.value = response.data.data;
+      return response.data.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'AI 大纲生成失败';
+      console.error('Error generating outline:', err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * 生成角色
+   */
+  async function generateCharacter(
+    bookId: string,
+    name?: string,
+    role?: string,
+    description?: string,
+  ) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await axios.post('/ai/character', {
+        bookId,
+        name,
+        role,
+        description,
+      });
+      lastResponse.value = response.data.data;
+      return response.data.data;
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'AI 角色生成失败';
+      console.error('Error generating character:', err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   /**
    * 返回 store 的所有内容
    */
@@ -209,5 +329,10 @@ export const useAiStore = defineStore('ai', () => {
     clearResponse,
     setPendingInsert,
     consumePendingInsert,
+    // Writing assistant
+    write,
+    editText,
+    generateOutline,
+    generateCharacter,
   };
 });

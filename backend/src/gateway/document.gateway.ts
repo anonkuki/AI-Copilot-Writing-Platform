@@ -41,6 +41,8 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import * as jwt from 'jsonwebtoken';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * 房间用户接口
@@ -68,6 +70,12 @@ interface RoomUser {
 export class DocumentGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  private jwtSecret: string;
+
+  constructor(private configService: ConfigService) {
+    this.jwtSecret = this.configService.get<string>('JWT_SECRET') || 'default-secret';
+  }
+
   /**
    * @WebSocketServer() 自动注入 Socket.IO 服务器实例
    * 用于向客户端发送消息
@@ -87,7 +95,24 @@ export class DocumentGateway
    * @param client - 连接的客户端 Socket 对象
    */
   handleConnection(client: Socket) {
-    console.log(`🔌 Client connected: ${client.id}`);
+    // 从 query 参数获取 token
+    const token = client.handshake.auth?.token || client.handshake.query?.token;
+
+    if (!token) {
+      console.log(`🔌 Client ${client.id} disconnected: No token provided`);
+      client.disconnect();
+      return;
+    }
+
+    try {
+      // 验证 JWT token
+      const decoded = jwt.verify(token as string, this.jwtSecret) as any;
+      (client as any).user = decoded;
+      console.log(`🔌 Client connected: ${client.id}, user: ${decoded.userId}`);
+    } catch (error) {
+      console.log(`🔌 Client ${client.id} disconnected: Invalid token`);
+      client.disconnect();
+    }
   }
 
   /**

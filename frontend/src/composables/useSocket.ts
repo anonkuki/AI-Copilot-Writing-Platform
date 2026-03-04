@@ -56,8 +56,11 @@ export function useSocket() {
     if (socket?.connected) return;
 
     // 创建新的 Socket 连接
-    // 连接地址从环境变量读取，默认为 http://localhost:3001/documents
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001/documents';
+    // 优先使用 VITE_SOCKET_URL；其次由 VITE_API_URL 推导；最终回退到本地默认值
+    const apiBaseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+    const socketUrl =
+      import.meta.env.VITE_SOCKET_URL ||
+      (apiBaseUrl ? `${apiBaseUrl}/documents` : 'http://localhost:3001/documents');
     socket = io(socketUrl, {
       // 传输方式：优先使用 WebSocket，如果失败则降级到轮询
       transports: ['websocket', 'polling'],

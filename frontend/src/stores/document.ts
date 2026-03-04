@@ -23,6 +23,9 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// 注意：axios 全局配置 (baseURL + 拦截器) 已在 main.ts 中统一注册
+
 /**
  * 文档类型接口
  * 定义文档的数据结构，便于 TypeScript 类型检查
@@ -127,14 +130,14 @@ export const useDocumentStore = defineStore('document', () => {
 
   /**
    * 获取所有文档列表
-   * 调用后端 API GET /api/documents
+   * 调用后端 API GET /documents
    */
   async function fetchDocuments() {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await axios.get('/api/documents');
-      documents.value = response.data;
+      const response = await axios.get('/documents');
+      documents.value = response.data.data;
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch documents';
       console.error('Error fetching documents:', err);
@@ -145,15 +148,15 @@ export const useDocumentStore = defineStore('document', () => {
 
   /**
    * 获取单个文档
-   * 调用后端 API GET /api/documents/:id
+   * 调用后端 API GET /documents/:id
    * @param id - 文档 ID
    */
   async function fetchDocument(id: string) {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await axios.get(`/api/documents/${id}`);
-      currentDocument.value = response.data;
+      const response = await axios.get(`/documents/${id}`);
+      currentDocument.value = response.data.data;
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch document';
       console.error('Error fetching document:', err);
@@ -164,7 +167,7 @@ export const useDocumentStore = defineStore('document', () => {
 
   /**
    * 创建新文档
-   * 调用后端 API POST /api/documents
+   * 调用后端 API POST /documents
    * @param title - 文档标题（可选）
    * @returns 新创建的文档对象
    */
@@ -172,8 +175,8 @@ export const useDocumentStore = defineStore('document', () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await axios.post('/api/documents', { title });
-      const newDoc = response.data;
+      const response = await axios.post('/documents', { title });
+      const newDoc = response.data.data;
       // 将新文档添加到列表最前面
       documents.value.unshift(newDoc);
       return newDoc;
@@ -188,7 +191,7 @@ export const useDocumentStore = defineStore('document', () => {
 
   /**
    * 更新文档
-   * 调用后端 API PUT /api/documents/:id
+   * 调用后端 API PUT /documents/:id
    * @param id - 文档 ID
    * @param data - 要更新的数据（title 和/或 content）
    * @returns 更新后的文档对象
@@ -197,16 +200,16 @@ export const useDocumentStore = defineStore('document', () => {
     isSyncing.value = true;
     error.value = null;
     try {
-      const response = await axios.put(`/api/documents/${id}`, data);
-      currentDocument.value = response.data;
+      const response = await axios.put(`/documents/${id}`, data);
+      currentDocument.value = response.data.data;
 
       // 同时更新文档列表中的数据
       const index = documents.value.findIndex((d) => d.id === id);
       if (index !== -1) {
-        documents.value[index] = response.data;
+        documents.value[index] = response.data.data;
       }
 
-      return response.data;
+      return response.data.data;
     } catch (err: any) {
       error.value = err.message || 'Failed to update document';
       console.error('Error updating document:', err);
@@ -218,14 +221,14 @@ export const useDocumentStore = defineStore('document', () => {
 
   /**
    * 删除文档
-   * 调用后端 API DELETE /api/documents/:id
+   * 调用后端 API DELETE /documents/:id
    * @param id - 文档 ID
    */
   async function deleteDocument(id: string) {
     isLoading.value = true;
     error.value = null;
     try {
-      await axios.delete(`/api/documents/${id}`);
+      await axios.delete(`/documents/${id}`);
       // 从列表中移除
       documents.value = documents.value.filter((d) => d.id !== id);
       // 如果删除的是当前文档，清空当前文档

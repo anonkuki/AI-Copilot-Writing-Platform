@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" fill="none">
+  <rect width="1200" height="720" rx="28" fill="#F5F3FF"/>
+  <rect x="120" y="140" width="960" height="420" rx="24" fill="#8B5CF6" fill-opacity="0.1"/>
+  <rect x="170" y="210" width="620" height="30" rx="10" fill="#7C3AED" fill-opacity="0.2"/>
+  <rect x="170" y="264" width="760" height="24" rx="10" fill="#7C3AED" fill-opacity="0.12"/>
+  <rect x="170" y="308" width="700" height="24" rx="10" fill="#7C3AED" fill-opacity="0.12"/>
+  <rect x="170" y="352" width="740" height="24" rx="10" fill="#7C3AED" fill-opacity="0.12"/>
+  <text x="120" y="100" fill="#5B21B6" font-size="42" font-family="Arial, sans-serif">文字没毛病</text>
+</svg>

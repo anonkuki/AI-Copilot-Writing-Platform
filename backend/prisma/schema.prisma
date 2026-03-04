@@ -23,10 +23,12 @@ model User {
   teamMembers    TeamMember[]
   ownedTeams    Team[]
   documents     Document[]
+  books         Book[]
   favorites     Favorite[]
   comments      Comment[]
   notifications Notification[]
   auditLogs     AuditLog[]
+  writingStats  WritingStat[]
 }
 
 // ==================== 团队 ====================
@@ -240,4 +242,389 @@ model AuditLog {
 
   // 关系
   user User @relation(fields: [userId], references: [id])
+}
+
+// ==================== 作家助手 - 书籍系统 ====================
+
+// 书籍
+model Book {
+  id          String   @id @default(uuid())
+  title       String
+  cover       String?  // 封面图 URL
+  description String?
+  status      String   @default("DRAFT") // DRAFT(草稿) | SERIAL(连载中) | FINISHED(已完结)
+  wordCount   Int      @default(0)
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关系
+  owner       User           @relation(fields: [ownerId], references: [id])
+  chapters    Chapter[]
+  volumes     Volume[]
+  outlines    Outline[]
+  characters  Character[]
+  inspirations Inspiration[]
+  // 新增：三层架构模型
+  worldSettings     WorldSetting[]
+  plotLines         PlotLine[]
+  timelineEvents    TimelineEvent[]
+  foreshadowings    Foreshadowing[]
+  characterRels     CharacterRelationship[]
+  eventLogs         EventLog[]
+  agentSessions     AgentSession[]
+}
+
+// 卷（用于组织章节）
+model Volume {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int      @default(0)
+  bookId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapters Chapter[]
+}
+
+// 章节
+model Chapter {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @default("")
+  wordCount   Int      @default(0)
+  status      String   @default("DRAFT") // DRAFT(草稿) | PUBLISHED(已发布)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  order       Int      @default(0)
+  bookId      String
+  volumeId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关系
+  book     Book             @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  volume   Volume?          @relation(fields: [volumeId], references: [id])
+  versions ChapterVersion[]
+  // 新增：三层架构模型
+  timelineEvents  TimelineEvent[]
+  foreshadowings Foreshadowing[]
+  scenes          Scene[]
+  emotionLogs     EmotionLog[]
+  growthRecords   GrowthRecord[]
+  chapterSummary  ChapterSummary?
+  eventLogs       EventLog[]
+  agentSessions   AgentSession[]
+}
+
+// 章节历史版本
+model ChapterVersion {
+  id         String   @id @default(uuid())
+  chapterId  String
+  content    String
+  version    Int
+  createdAt  DateTime @default(now())
+
+  // 关系
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+// 大纲
+model Outline {
+  id      String  @id @default(uuid())
+  title   String
+  content String?
+  order   Int     @default(0)
+  bookId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// 角色
+model Character {
+  id      String  @id @default(uuid())
+  name    String
+  role    String? // 角色类型：主角/配角/反派/龙套
+  avatar  String? // 头像 URL
+  bio     String? // 简介
+  bookId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  book        Book                   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  profile     CharacterProfile?
+  emotions    EmotionLog[]
+  growths     GrowthRecord[]
+  fromRels    CharacterRelationship[] @relation("FromCharacter")
+  toRels      CharacterRelationship[] @relation("ToCharacter")
+}
+
+// 灵感
+model Inspiration {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  tags      String   @default("[]") // JSON array
+  bookId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关系
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// 每日写作统计
+model WritingStat {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime
+  wordCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// ==================== AI 写作代理 - 三层架构 ====================
+
+// L3 战略层 - 世界观与大纲
+model WorldSetting {
+  id          String   @id @default(uuid())
+  bookId      String
+  genre       String?  // 题材：修仙/科幻/都市/玄幻等
+  theme       String?  // 主题
+  tone        String?  // 风格：严肃/轻松/黑暗等
+  targetWordCount Int?  // 目标字数
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// 剧情线
+model PlotLine {
+  id          String   @id @default(uuid())
+  bookId      String
+  title       String   // 剧情线标题
+  description String?  // 剧情线描述
+  type        String   @default("MAIN") // MAIN(主线)/SUB(副线)/CHARACTER(角色线)
+  status      String   @default("ACTIVE") // ACTIVE/COMPLETED/ABANDONED
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+// 时间线事件
+model TimelineEvent {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String?  // 关联章节（可选）
+  title       String
+  description String?  // 事件描述
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  book     Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter  Chapter? @relation(fields: [chapterId], references: [id])
+}
+
+// 伏笔
+model Foreshadowing {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String?  // 埋下伏笔的章节
+  title       String   // 伏笔标题
+  content     String   // 伏笔内容
+  status      String   @default("PENDING") // PENDING(待回收)/RESOLVED(已回收)/ABANDONED(已废弃)
+  resolveAt   String?  // 回收章节ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  book    Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter Chapter?  @relation(fields: [chapterId], references: [id])
+}
+
+// L2 战术层 - 角色详情
+model CharacterProfile {
+  id              String   @id @default(uuid())
+  characterId     String   @unique // 关联基础 Character
+  personality     String?  // 性格描述
+  background      String?  // 背景故事
+  motivation      String?  // 核心动机
+  fear            String?  // 恐惧/弱点
+  strength        String?  // 优势/能力
+  weakness        String?  // 劣势/短板
+  currentGoal     String?  // 当前目标
+  longTermGoal    String?  // 长期目标
+  arc             String?  // 成长弧线描述
+  appearance      String?  // 外貌描述
+  catchphrase     String?  // 口头禅
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+// 角色关系
+model CharacterRelationship {
+  id          String   @id @default(uuid())
+  bookId      String
+  fromId      String   // 角色A
+  toId        String   // 角色B
+  type        String   // 关系类型：朋友/敌人/恋人/家人/师生等
+  description String?  // 关系描述
+  status      String   @default("POSITIVE") // POSITIVE/NEUTRAL/NEGATIVE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  book     Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  fromChar Character   @relation("FromCharacter", fields: [fromId], references: [id])
+  toChar   Character   @relation("ToCharacter", fields: [toId], references: [id])
+
+  @@unique([fromId, toId])
+}
+
+// 角色情绪日志
+model EmotionLog {
+  id          String   @id @default(uuid())
+  characterId String
+  chapterId   String?  // 关联章节
+  emotion     String   // 情绪类型：开心/悲伤/愤怒/恐惧等
+  intensity   Int      @default(5) // 强度 1-10
+  trigger     String?  // 情绪触发事件
+  createdAt   DateTime @default(now())
+
+  character Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  chapter   Chapter?    @relation(fields: [chapterId], references: [id])
+}
+
+// 角色成长记录
+model GrowthRecord {
+  id          String   @id @default(uuid())
+  characterId String
+  chapterId   String?  // 关联章节
+  beforeState String?  // 成长前状态
+  afterState  String?  // 成长后状态
+  description String?  // 成长描述
+  createdAt   DateTime @default(now())
+
+  character Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  chapter   Chapter?    @relation(fields: [chapterId], references: [id])
+}
+
+// L1 执行层 - 场景与事件
+model Scene {
+  id          String   @id @default(uuid())
+  chapterId   String
+  title       String?  // 场景标题
+  content     String   // 场景内容
+  order       Int      @default(0)
+  location    String?  // 场景地点
+  timeOfDay   String?  // 时间：早晨/中午/夜晚等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+// 事件日志
+model EventLog {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String?
+  type        String   // 事件类型
+  description String   // 事件描述
+  participants String? // 参与者（JSON数组）
+  createdAt   DateTime @default(now())
+
+  book    Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter Chapter?  @relation(fields: [chapterId], references: [id])
+}
+
+// 章节摘要（用于长篇记忆管理）
+model ChapterSummary {
+  id          String   @id @default(uuid())
+  chapterId    String   @unique
+  summary     String   // 章节摘要
+  keyEvents   String?  // 关键事件（JSON数组）
+  wordCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+// Agent 会话记录
+model AgentSession {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String?
+  agentType   String   // AGENT 类型：PLANNER/CHARACTER/WRITER/CONSISTENCY
+  input       String   // 输入
+  output      String   // 输出
+  status      String   @default("PENDING") // PENDING/PROCESSING/COMPLETED/FAILED
+  duration    Int?     // 耗时（毫秒）
+  createdAt   DateTime @default(now())
+
+  book    Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter Chapter?  @relation(fields: [chapterId], references: [id])
+}
+
+// ==================== 向量嵌入存储 ====================
+
+// Embedding 存储（用于 RAG 向量检索）
+model Embedding {
+  id          String   @id @default(uuid())
+  sourceType  String   // chapter | character | world_setting | plot_line | foreshadowing | scene
+  sourceId    String   // 关联资源 ID
+  bookId      String   // 所属书籍
+  content     String   // 原始文本片段
+  vector      String   // JSON 编码的向量数组
+  metadata    String?  // JSON 元数据（chapter_id, tag 等）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bookId, sourceType])
+  @@index([sourceId])
+}
+
+// ==================== 一致性规则引擎 ====================
+
+// 规则定义（用于一致性检查）
+model ConsistencyRule {
+  id          String   @id @default(uuid())
+  bookId      String
+  type        String   // timeline | character_ability | character_personality | world_rule | foreshadowing
+  name        String   // 规则名称
+  description String?  // 规则描述
+  condition   String   // JSON 条件表达式
+  severity    String   @default("WARNING") // ERROR | WARNING | INFO
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([bookId, type])
+}
+
+// 一致性检查报告
+model ConsistencyReport {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String?
+  issues      String   // JSON: [{type, severity, description, suggestion, location}]
+  score       Float    @default(1.0) // 0-1 一致性评分
+  checkedAt   DateTime @default(now())
+
+  @@index([bookId])
 }

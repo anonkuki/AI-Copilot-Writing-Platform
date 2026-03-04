@@ -1,288 +1,275 @@
 <script setup lang="ts">
-/**
- * 首页视图组件（HomeView.vue）
- * ============================================
- * 这是应用的主页面，显示文档列表，类似于公司的前台大厅
- *
- * 核心功能：
- * 1. 显示所有文档列表 - 以卡片形式展示
- * 2. 创建新文档 - 点击按钮创建
- * 3. 删除文档 - 悬停后显示删除按钮
- * 4. 打开文档 - 点击卡片进入编辑页面
- * 5. 显示欢迎指南 - 首次访问时显示使用说明
- * 6. 自动创建示例 - 如果没有文档，自动创建一个示例文档
- *
- * 什么是视图组件（View）？
- * - Vue Router 管理的页面级别的组件
- * - 每个路由对应一个视图组件
- * - 负责展示完整的页面内容
- */
-
-import { ref, onMounted } from 'vue';
-// 引入 Vue Router，用于编程式导航（跳转页面）
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-// 引入文档状态管理
-import { useDocumentStore } from '@/stores/document';
+import { useAuthStore } from '@/stores/auth';
+import { useBookStore, type Book } from '@/stores/book';
+import { apiPost } from '@/lib/api';
 
-// 创建路由实例
 const router = useRouter();
-// 创建文档 store 实例
-const documentStore = useDocumentStore();
+const authStore = useAuthStore();
+const bookStore = useBookStore();
 
-// 是否正在创建文档（用于禁用按钮）
+const user = computed(() => authStore.user);
+
+const showNewBookModal = ref(false);
+const newBookTitle = ref('');
+const newBookDescription = ref('');
+const newBookCover = ref('');
 const isCreating = ref(false);
-// 是否显示操作指南
-const showGuide = ref(true);
+const createError = ref('');
+const uploadingCover = ref(false);
 
-/**
- * 组件挂载时执行
- * 类似于组件的"出生"事件
- */
 onMounted(async () => {
-  // 获取所有文档
-  await documentStore.fetchDocuments();
-  // 如果没有文档，自动创建一个示例文档
-  if (documentStore.documents.length === 0) {
-    await createSampleDocument();
+  try {
+    await Promise.all([
+      bookStore.fetchBooks(),
+      bookStore.fetchStats(),
+      bookStore.fetchWritingStats(),
+    ]);
+  } catch (err) {
+    console.error('加载数据失败:', err);
   }
 });
 
-/**
- * 创建新文档
- * 1. 调用 store 创建文档
- * 2. 跳转到文档编辑页面
- */
-async function createNewDocument() {
-  isCreating.value = true;  // 开始创建，显示加载状态
-  const doc = await documentStore.createDocument('未命名文档');
-  isCreating.value = false;  // 创建完成
-
-  if (doc) {
-    // 跳转到文档编辑页面
-    router.push(`/document/${doc.id}`);
-  }
-}
-
-/**
- * 创建示例文档
- * 首次使用时自动创建，包含使用说明
- */
-async function createSampleDocument() {
-  // 创建文档
-  const doc = await documentStore.createDocument('欢迎使用 AI+ 文档');
-  if (doc) {
-    // 构建示例内容（TipTap JSON 格式）
-    const sampleContent = JSON.stringify({
-      type: 'doc',
-      content: [
-        {
-          type: 'heading',
-          attrs: { level: 1 },
-          content: [{ type: 'text', text: '欢迎使用 AI+ 智能文档系统' }]
-        },
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: '这是一个类似 Notion 的智能文档编辑器，支持以下功能：' }]
-        },
-        {
-          type: 'bulletList',
-          content: [
-            { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: '实时协作' }] }] },
-            { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: '输入 / 唤起命令菜单' }] }] },
-            { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'AI 智能辅助写作' }] }] }
-          ]
-        },
-        {
-          type: 'heading',
-          attrs: { level: 2 },
-          content: [{ type: 'text', text: '📝 使用技巧' }]
-        },
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: '在空白行输入斜杠 / 可唤起命令菜单，支持添加标题、列表、代码块等。' }]
-        },
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: '选中文本后，会出现 AI 按钮，点击可获取智能建议！' }]
-        }
-      ]
+async function createNewBook() {
+  if (!newBookTitle.value.trim()) return;
+  createError.value = '';
+  isCreating.value = true;
+  try {
+    const book = await bookStore.createBook({
+      title: newBookTitle.value.trim(),
+      description: newBookDescription.value.trim() || undefined,
+      cover: newBookCover.value.trim() || undefined,
     });
-    // 更新文档内容
-    await documentStore.updateDocument(doc.id, { content: sampleContent });
-    // 跳转到示例文档
-    router.push(`/document/${doc.id}`);
+    showNewBookModal.value = false;
+    resetModal();
+    router.push(`/editor/${book.id}`);
+  } catch (err: any) {
+    createError.value = err?.response?.data?.message?.[0] || err?.message || '创建失败';
+  } finally {
+    isCreating.value = false;
   }
 }
 
-/**
- * 打开文档
- * 跳转到文档编辑页面
- * @param id - 文档 ID
- */
-function openDocument(id: string) {
-  router.push(`/document/${id}`);
+function resetModal() {
+  newBookTitle.value = '';
+  newBookDescription.value = '';
+  newBookCover.value = '';
+  createError.value = '';
 }
 
-/**
- * 删除文档
- * 1. 阻止事件冒泡（避免触发卡片点击）
- * 2. 确认删除
- * 3. 调用 store 删除
- * @param id - 文档 ID
- * @param event - 点击事件
- */
-async function deleteDocument(id: string, event: Event) {
-  event.stopPropagation();  // 阻止冒泡
-  if (confirm('确定要删除这个文档吗？')) {
-    await documentStore.deleteDocument(id);
+function openBook(book: Book) {
+  router.push(`/editor/${book.id}`);
+}
+
+async function deleteBook(book: Book, event: Event) {
+  event.stopPropagation();
+  if (!confirm(`确定删除《${book.title}》吗？此操作无法撤销。`)) return;
+  try {
+    await bookStore.deleteBook(book.id);
+    await Promise.all([bookStore.fetchStats(), bookStore.fetchWritingStats()]);
+  } catch (err: any) {
+    alert(`删除失败: ${err.message || '网络错误，请稍后重试'}`);
   }
 }
 
-/**
- * 格式化日期
- * 将 ISO 格式日期转换为中文友好格式
- * @param dateString - ISO 格式的日期字符串
- */
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+async function handleCoverFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  uploadingCover.value = true;
+  createError.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await apiPost<{ coverUrl: string }>('/upload', formData);
+    newBookCover.value = result.coverUrl;
+  } catch (err: any) {
+    createError.value = err?.response?.data?.message?.[0] || err?.message || '封面上传失败';
+  } finally {
+    uploadingCover.value = false;
+    input.value = '';
+  }
 }
 
-/**
- * 关闭操作指南
- */
-function closeGuide() {
-  showGuide.value = false;
+function getStatusLabel(status: string) {
+  return { DRAFT: '草稿', SERIAL: '连载中', FINISHED: '已完结' }[status] || status;
+}
+
+function formatWordCount(count?: number | null) {
+  if (!count) return '0';
+  if (count >= 10000) return `${(count / 10000).toFixed(1)}万`;
+  return String(count);
 }
 </script>
 
 <template>
-  <!--
-    页面容器
-    min-h-screen: 最小高度占满整个屏幕
-    p-8: 内边距 2rem
-  -->
-  <div class="min-h-screen p-8">
-
-    <!-- 操作提示（首次访问时显示） -->
-    <div v-if="showGuide" class="max-w-4xl mx-auto mb-6">
-      <!-- 渐变背景卡片 -->
-      <div class="bg-gradient-to-r from-accent/20 to-purple-500/20 border border-accent/30 rounded-xl p-4">
+  <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <!-- 顶部区域：欢迎 + 统计 -->
+    <div class="bg-white border-b border-border">
+      <div class="max-w-content mx-auto px-6 py-5">
         <div class="flex items-start justify-between">
-          <!-- 指南内容 -->
-          <div class="flex items-start gap-3">
-            <!-- 图标 -->
-            <div class="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <!-- 指南文本 -->
-            <div>
-              <h3 class="font-semibold text-text-primary">🎉 欢迎使用 AI+ 文档系统</h3>
-              <ul class="text-sm text-text-secondary mt-2 space-y-1">
-                <li>• <strong>新建文档</strong>：点击右上角"新建文档"按钮</li>
-                <li>• <strong>命令菜单</strong>：在空白行输入 <code class="bg-white/10 px-1 rounded">/</code> 唤起</li>
-                <li>• <strong>AI 辅助</strong>：选中文本后点击浮动工具栏的 AI 按钮</li>
-                <li>• <strong>右侧面板</strong>：点击右上角 AI 按钮打开完整 AI 面板</li>
-              </ul>
+          <!-- 欢迎横幅 -->
+          <div class="flex-1">
+            <div class="bg-gradient-to-r from-brand-50 to-blue-50 rounded-xl p-6 relative overflow-hidden">
+              <div class="relative z-10">
+                <p class="text-text-secondary text-sm">欢迎使用 AI+ 智能写作助手</p>
+                <h1 class="text-xl font-bold text-text-primary mt-1">与世界分享你的故事</h1>
+              </div>
+              <div class="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
+                <svg class="w-24 h-24 text-brand" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+              </div>
             </div>
           </div>
-          <!-- 关闭按钮 -->
-          <button @click="closeGuide" class="text-text-muted hover:text-text-primary">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          <!-- 统计卡片 -->
+          <div v-if="bookStore.stats && bookStore.writingStats" class="ml-6 flex gap-4 shrink-0">
+            <div class="bg-surface-secondary rounded-xl px-5 py-4 text-center min-w-[100px]">
+              <div class="text-2xl font-bold text-brand">{{ bookStore.stats.totalBooks }}</div>
+              <div class="text-xs text-text-muted mt-1">作品总数</div>
+            </div>
+            <div class="bg-surface-secondary rounded-xl px-5 py-4 text-center min-w-[100px]">
+              <div class="text-2xl font-bold text-success">{{ formatWordCount(bookStore.writingStats.todayWordCount) }}</div>
+              <div class="text-xs text-text-muted mt-1">今日字数</div>
+            </div>
+            <div class="bg-surface-secondary rounded-xl px-5 py-4 text-center min-w-[100px]">
+              <div class="text-2xl font-bold text-ai-primary">{{ bookStore.writingStats.streakDays }}</div>
+              <div class="text-xs text-text-muted mt-1">连续天数</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 主内容区 -->
-    <div class="max-w-4xl mx-auto">
-      <!-- 页面头部 -->
-      <header class="flex items-center justify-between mb-8">
-        <div>
-          <h1 class="text-3xl font-bold text-text-primary">AI+ 智能文档</h1>
-          <p class="text-text-secondary mt-1">您的智能文档工作空间</p>
+    <!-- 操作栏 -->
+    <div class="bg-white border-b border-border">
+      <div class="max-w-content mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button @click="showNewBookModal = true" class="btn-primary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            新建作品
+          </button>
         </div>
-        <!-- 新建文档按钮 -->
-        <button
-          @click="createNewDocument"
-          :disabled="isCreating"
-          class="px-6 py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          {{ isCreating ? '创建中...' : '新建文档' }}
-        </button>
-      </header>
 
-      <!-- 加载状态 -->
-      <div v-if="documentStore.isLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+        <div class="flex items-center gap-3 text-sm text-text-muted">
+          <span class="text-text-primary font-medium">全部</span>
+          <span>|</span>
+          <span class="cursor-pointer hover:text-text-primary">管理</span>
+        </div>
       </div>
+    </div>
 
-      <!-- 文档列表（网格布局） -->
-      <div v-else-if="documentStore.documents.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <!-- 文档卡片 -->
-        <div
-          v-for="doc in documentStore.documents"
-          :key="doc.id"
-          @click="openDocument(doc.id)"
-          class="group bg-surface-light/50 hover:bg-surface-light border border-white/5 hover:border-accent/30 rounded-xl p-5 cursor-pointer transition-all duration-200"
-        >
-          <!-- 卡片头部 -->
-          <div class="flex items-start justify-between">
-            <!-- 文档标题 -->
-            <h3 class="font-semibold text-lg text-text-primary truncate flex-1">
-              {{ doc.title || '未命名' }}
-            </h3>
-            <!-- 删除按钮（悬停时显示） -->
-            <button
-              @click="deleteDocument(doc.id, $event)"
-              class="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 rounded-lg transition-all"
-            >
-              <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    <!-- 书籍网格 -->
+    <div class="flex-1 overflow-auto">
+      <div class="max-w-content mx-auto px-6 py-6">
+        <div v-if="bookStore.isLoading" class="py-16 text-center text-text-muted">
+          <svg class="w-8 h-8 mx-auto mb-3 animate-spin text-brand" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          加载中...
+        </div>
+
+        <div v-else-if="bookStore.books.length > 0" class="grid gap-5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div
+            v-for="book in bookStore.books"
+            :key="book.id"
+            @click="openBook(book)"
+            class="group cursor-pointer animate-fade-in"
+          >
+            <!-- 封面 -->
+            <div class="aspect-[3/4] rounded-lg overflow-hidden relative shadow-card group-hover:shadow-card-hover transition-shadow duration-200">
+              <img v-if="book.cover" :src="book.cover" :alt="book.title" class="w-full h-full object-cover" />
+              <div v-else class="w-full h-full bg-gradient-to-br from-brand-50 to-blue-100 flex items-center justify-center">
+                <span class="text-brand/40 text-3xl font-serif">{{ book.title.charAt(0) }}</span>
+              </div>
+
+              <!-- 状态标签 -->
+              <span class="absolute top-2 left-2 px-2 py-0.5 text-xs rounded font-medium text-white"
+                :class="{
+                  'bg-gray-400': book.status === 'DRAFT',
+                  'bg-green-500': book.status === 'SERIAL',
+                  'bg-indigo-500': book.status === 'FINISHED',
+                }">
+                {{ getStatusLabel(book.status) }}
+              </span>
+
+              <!-- 删除按钮 -->
+              <button
+                @click="deleteBook(book, $event)"
+                class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/40 hover:bg-danger text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+              >✕</button>
+            </div>
+
+            <!-- 信息 -->
+            <div class="mt-2.5 px-0.5">
+              <div class="flex items-center gap-1.5">
+                <h3 class="text-sm font-medium text-text-primary truncate flex-1">{{ book.title }}</h3>
+              </div>
+              <div class="flex items-center gap-2 mt-1 text-xs text-text-muted">
+                <span v-if="book.wordCount">{{ formatWordCount(book.wordCount) }}字</span>
+                <span v-if="book._count?.chapters">{{ book._count.chapters }}章</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-else class="text-center py-20">
+          <div class="w-20 h-20 mx-auto mb-4 bg-surface-secondary rounded-full flex items-center justify-center">
+            <svg class="w-10 h-10 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-text-primary mb-2">暂无作品</h2>
+          <p class="text-sm text-text-secondary mb-6">点击"新建草稿"开始你的第一部作品</p>
+          <button @click="showNewBookModal = true" class="btn-primary">创建作品</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建作品弹窗 -->
+    <div v-if="showNewBookModal" class="modal-overlay" @click.self="showNewBookModal = false; resetModal();">
+      <div class="modal-content w-full max-w-md">
+        <h3 class="text-lg font-semibold text-text-primary mb-5">新建作品</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="form-label">作品标题 <span class="text-danger">*</span></label>
+            <input v-model="newBookTitle" type="text" class="form-input" placeholder="请输入作品标题" @keyup.enter="createNewBook" />
+          </div>
+
+          <div>
+            <label class="form-label">作品简介</label>
+            <textarea v-model="newBookDescription" rows="3" class="form-textarea" placeholder="简介（可选）" />
+          </div>
+
+          <div>
+            <label class="form-label">封面图片</label>
+            <input v-model="newBookCover" type="text" class="form-input mb-2" placeholder="封面 URL（可选）" />
+            <label class="inline-flex items-center gap-2 px-3 py-1.5 bg-surface-secondary rounded-lg text-xs text-text-secondary cursor-pointer hover:bg-surface-hover">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
               </svg>
-            </button>
+              上传封面
+              <input type="file" accept="image/*" @change="handleCoverFile" class="hidden" />
+            </label>
+            <span v-if="uploadingCover" class="text-xs text-text-muted ml-2">上传中...</span>
           </div>
-          <!-- 更新时间 -->
-          <p class="text-text-secondary text-sm mt-2 line-clamp-2">
-            最后编辑于 {{ formatDate(doc.updatedAt) }}
-          </p>
-          <!-- 版本标签 -->
-          <div class="flex items-center gap-2 mt-3">
-            <span class="text-xs text-text-muted bg-white/5 px-2 py-1 rounded">
-              v{{ doc.version }}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      <!-- 空状态（没有文档时） -->
-      <div v-else class="text-center py-16">
-        <!-- 空状态图标 -->
-        <div class="w-20 h-20 mx-auto mb-6 bg-surface-light/30 rounded-full flex items-center justify-center">
-          <svg class="w-10 h-10 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+          <div v-if="createError" class="text-sm text-danger bg-red-50 px-3 py-2 rounded-lg">{{ createError }}</div>
         </div>
-        <!-- 空状态文本 -->
-        <h2 class="text-xl font-semibold text-text-primary mb-2">暂无文档</h2>
-        <p class="text-text-secondary mb-6">创建您的第一个文档开始使用</p>
-        <button
-          @click="createNewDocument"
-          class="px-6 py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-all duration-200"
-        >
-          创建文档
-        </button>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button @click="showNewBookModal = false; resetModal();" class="btn-secondary">取消</button>
+          <button @click="createNewBook" :disabled="!newBookTitle.trim() || isCreating || uploadingCover" class="btn-primary disabled:opacity-50">
+            {{ isCreating ? '创建中...' : '创建' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

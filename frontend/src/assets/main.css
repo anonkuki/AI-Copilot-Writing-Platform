@@ -9,117 +9,369 @@
 }
 
 html {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
 }
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: #F7F8FA;
+  color: #1A1A2E;
 }
 
-/* TipTap Editor Styles */
+/* ==================== 通用组件 ==================== */
+.btn-primary {
+  @apply bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium
+    hover:bg-brand-dark transition-colors duration-150;
+}
+
+.btn-secondary {
+  @apply bg-white text-text-secondary border border-border px-4 py-2 rounded-lg text-sm
+    hover:bg-surface-hover hover:text-text-primary transition-colors duration-150;
+}
+
+.btn-danger {
+  @apply bg-danger text-white px-4 py-2 rounded-lg text-sm font-medium
+    hover:bg-red-600 transition-colors duration-150;
+}
+
+.btn-ghost {
+  @apply text-text-secondary px-3 py-1.5 rounded-md text-sm
+    hover:bg-surface-hover hover:text-text-primary transition-colors duration-150;
+}
+
+.badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.badge-draft { @apply bg-gray-100 text-gray-500; }
+.badge-serial { @apply bg-green-50 text-green-600; }
+.badge-finished { @apply bg-indigo-50 text-indigo-600; }
+.badge-scheduled { @apply bg-yellow-50 text-yellow-600; }
+
+/* ==================== 卡片 ==================== */
+.card {
+  @apply bg-white rounded-card border border-border shadow-card;
+}
+
+.card-hover {
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply shadow-card-hover;
+  transform: translateY(-1px);
+}
+
+/* ==================== TipTap 编辑器 ==================== */
 .ProseMirror {
   outline: none;
-  min-height: 400px;
+  min-height: 500px;
+  color: #1A1A2E;
+  font-family: "Source Han Serif SC", "Noto Serif SC", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 2rem 0;
 }
 
 .ProseMirror p {
-  margin: 0.75em 0;
-  line-height: 1.7;
+  margin: 0.6em 0;
+  text-indent: 2em;
 }
 
 .ProseMirror h1 {
-  font-size: 2.25rem;
+  font-size: 1.8rem;
   font-weight: 700;
   margin: 1.5em 0 0.75em;
-  letter-spacing: -0.025em;
+  text-indent: 0;
+  color: #1A1A2E;
+  font-family: "Microsoft YaHei", sans-serif;
 }
 
 .ProseMirror h2 {
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: 600;
   margin: 1.25em 0 0.5em;
+  text-indent: 0;
+  color: #1A1A2E;
+  font-family: "Microsoft YaHei", sans-serif;
 }
 
 .ProseMirror h3 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 600;
   margin: 1em 0 0.5em;
+  text-indent: 0;
+  color: #333;
+  font-family: "Microsoft YaHei", sans-serif;
 }
 
 .ProseMirror ul,
 .ProseMirror ol {
   padding-left: 1.5em;
   margin: 0.5em 0;
+  text-indent: 0;
 }
 
 .ProseMirror li {
   margin: 0.25em 0;
+  text-indent: 0;
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid #e94560;
-  padding-left: 1em;
+  border-left: 3px solid #4F7CFF;
+  padding: 0.8em 1em;
   margin: 1em 0;
-  color: #a0a0a0;
-  font-style: italic;
+  color: #5A5A72;
+  background: #F7F8FA;
+  border-radius: 0 6px 6px 0;
+  text-indent: 0;
 }
 
 .ProseMirror pre {
-  background: #0f0f1a;
-  border-radius: 0.5rem;
+  background: #F7F8FA;
+  border-radius: 6px;
   padding: 1rem;
   margin: 1em 0;
   overflow-x: auto;
+  border: 1px solid #E5E7EB;
+  text-indent: 0;
 }
 
 .ProseMirror code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 0.875em;
-  background: #0f0f1a;
+  background: #EEF2FF;
   padding: 0.125em 0.375em;
-  border-radius: 0.25rem;
+  border-radius: 3px;
+  color: #4F7CFF;
 }
 
 .ProseMirror pre code {
   background: transparent;
   padding: 0;
+  color: #1A1A2E;
 }
 
 .ProseMirror hr {
   border: none;
-  border-top: 1px solid #2a2a4a;
+  border-top: 1px solid #E5E7EB;
   margin: 2em 0;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #6b7280;
+  color: #9CA3AF;
   float: left;
   height: 0;
   pointer-events: none;
 }
 
-/* Selection highlight */
 .ProseMirror ::selection {
-  background: rgba(233, 69, 96, 0.3);
+  background: rgba(79, 124, 255, 0.2);
 }
 
-/* Scrollbar styling */
+/* ====== 内联润色装饰（Copilot 风格红绿 diff） ====== */
+.polish-del {
+  background: rgba(255, 0, 0, 0.08);
+  text-decoration: line-through;
+  text-decoration-color: rgba(220, 38, 38, 0.5);
+  color: #9ca3af;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+.polish-del-active {
+  background: rgba(255, 0, 0, 0.15);
+  text-decoration: line-through;
+  text-decoration-color: #dc2626;
+  color: #dc2626;
+  border-radius: 2px;
+  outline: 2px solid rgba(220, 38, 38, 0.25);
+  outline-offset: 1px;
+  animation: polishHighlight 0.3s ease-out;
+}
+.polish-ins {
+  background: rgba(22, 163, 74, 0.08);
+  color: #86efac;
+  border-radius: 2px;
+  padding: 0 2px;
+  font-style: italic;
+  transition: all 0.2s ease;
+}
+.polish-ins-active {
+  background: rgba(22, 163, 74, 0.15);
+  color: #16a34a;
+  border-radius: 2px;
+  padding: 0 2px;
+  font-weight: 500;
+  outline: 2px solid rgba(22, 163, 74, 0.25);
+  outline-offset: 1px;
+  animation: polishHighlight 0.3s ease-out;
+}
+
+@keyframes polishHighlight {
+  0% { outline-width: 4px; outline-offset: 3px; opacity: 0.5; }
+  100% { outline-width: 2px; outline-offset: 1px; opacity: 1; }
+}
+
+/* ==================== 滚动条 ==================== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a2e;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a4a;
-  border-radius: 4px;
+  background: #D1D5DB;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a5a;
+  background: #9CA3AF;
 }
+
+/* ==================== AI 相关 ==================== */
+.ai-gradient {
+  background: linear-gradient(135deg, #7C3AED 0%, #4F7CFF 100%);
+}
+
+.ai-gradient-text {
+  background: linear-gradient(135deg, #7C3AED, #4F7CFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* AI 面板深度思考脉冲动画 */
+@keyframes think-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.animate-think-pulse {
+  animation: think-pulse 1.5s ease-in-out infinite;
+}
+
+/* AI 消息渐入动画 */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-msg-in {
+  animation: msg-in 0.25s ease-out;
+}
+
+/* 流光条动画 */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(79,124,255,0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* AI 面板头部微光效果 */
+.ai-panel-header {
+  position: relative;
+  overflow: hidden;
+}
+.ai-panel-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(79,124,255,0.3), transparent);
+}
+
+/* 深度思考容器 */
+.thinking-container {
+  position: relative;
+  border-left: 2px solid #7C3AED;
+  padding-left: 0.75rem;
+}
+.thinking-container::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7C3AED;
+}
+
+/* ==================== 侧边栏菜单项 ==================== */
+.sidebar-item {
+  @apply flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary rounded-lg
+    cursor-pointer transition-colors duration-150;
+}
+
+.sidebar-item:hover {
+  @apply bg-surface-hover text-text-primary;
+}
+
+.sidebar-item.active {
+  @apply bg-brand-50 text-brand font-medium;
+}
+
+/* ==================== 模态框 ==================== */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/40 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-white rounded-xl shadow-modal p-6 max-h-[85vh] overflow-y-auto;
+}
+
+/* ==================== 表单 ==================== */
+.form-input {
+  @apply w-full px-3 py-2 border border-border rounded-lg text-sm
+    focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30
+    placeholder:text-text-muted transition-colors duration-150;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-text-primary mb-1.5;
+}
+
+.form-textarea {
+  @apply w-full px-3 py-2 border border-border rounded-lg text-sm resize-none
+    focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30
+    placeholder:text-text-muted transition-colors duration-150;
+}
+
+/* ==================== 面板过渡动画 ==================== */
+.slide-panel-enter-active,
+.slide-panel-leave-active {
+  transition: width 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+}
+
+.slide-panel-enter-from,
+.slide-panel-leave-to {
+  width: 0 !important;
+  opacity: 0;
+}
+
+/* ==================== 编辑器页面布局微调 ==================== */
+.chapter-active {
+  @apply bg-brand-50 border-l-2 border-l-brand;
+}
+
+/* 平滑过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
