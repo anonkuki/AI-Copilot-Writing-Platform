@@ -54,4 +54,14 @@ export class UsersController {
       changePasswordDto.newPassword,
     );
   }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() body: { refreshToken?: string; refresh_token?: string }) {
+    const token = body.refreshToken || body.refresh_token;
+    if (!token) {
+      return { message: 'refresh token 不能为空' };
+    }
+    return this.usersService.refreshAuth(token);
+  }
 }

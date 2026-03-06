@@ -30,7 +30,11 @@ export class AssistantService {
     });
   }
 
-  async updateOutline(id: string, userId: string, data: { title?: string; content?: string; order?: number }) {
+  async updateOutline(
+    id: string,
+    userId: string,
+    data: { title?: string; content?: string; order?: number },
+  ) {
     const outline = await this.prisma.outline.findUnique({
       where: { id },
       include: { book: true },
@@ -61,14 +65,22 @@ export class AssistantService {
     });
   }
 
-  async createCharacter(bookId: string, userId: string, data: { name: string; role?: string; avatar?: string; bio?: string }) {
+  async createCharacter(
+    bookId: string,
+    userId: string,
+    data: { name: string; role?: string; avatar?: string; bio?: string },
+  ) {
     await this.validateBook(bookId, userId);
     return this.prisma.character.create({
       data: { ...data, bookId },
     });
   }
 
-  async updateCharacter(id: string, userId: string, data: { name?: string; role?: string; avatar?: string; bio?: string }) {
+  async updateCharacter(
+    id: string,
+    userId: string,
+    data: { name?: string; role?: string; avatar?: string; bio?: string },
+  ) {
     const character = await this.prisma.character.findUnique({
       where: { id },
       include: { book: true },
@@ -100,7 +112,11 @@ export class AssistantService {
     });
   }
 
-  async createInspiration(bookId: string, userId: string, data: { title: string; content: string; tags?: string[] }) {
+  async createInspiration(
+    bookId: string,
+    userId: string,
+    data: { title: string; content: string; tags?: string[] },
+  ) {
     await this.validateBook(bookId, userId);
     return this.prisma.inspiration.create({
       data: {
@@ -112,7 +128,11 @@ export class AssistantService {
     });
   }
 
-  async updateInspiration(id: string, userId: string, data: { title?: string; content?: string; tags?: string[] }) {
+  async updateInspiration(
+    id: string,
+    userId: string,
+    data: { title?: string; content?: string; tags?: string[] },
+  ) {
     const inspiration = await this.prisma.inspiration.findUnique({
       where: { id },
       include: { book: true },

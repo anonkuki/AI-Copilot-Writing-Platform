@@ -49,8 +49,9 @@ export class UsersService {
         },
       });
 
-      const token = this.generateToken(user.id, user.email);
-      return this.buildAuthPayload(user, token);
+      const token = this.generateAccessToken(user.id, user.email);
+      const refresh = this.generateRefreshToken(user.id, user.email);
+      return this.buildAuthPayload(user, token, refresh);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -79,8 +80,9 @@ export class UsersService {
         role: user.role,
         avatar: user.avatar,
       };
-      const token = this.generateToken(user.id, user.email);
-      return this.buildAuthPayload(userInfo, token);
+      const token = this.generateAccessToken(user.id, user.email);
+      const refresh = this.generateRefreshToken(user.id, user.email);
+      return this.buildAuthPayload(userInfo, token, refresh);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -142,19 +144,51 @@ export class UsersService {
     return { message: '密码修改成功' };
   }
 
-  private buildAuthPayload(user: any, token: string) {
+  private buildAuthPayload(user: any, accessToken: string, refreshToken: string) {
     return {
       user,
-      accessToken: token,
-      refreshToken: token,
-      access_token: token,
-      refresh_token: token,
+      accessToken,
+      refreshToken,
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user_info: user,
     };
   }
 
-  private generateToken(userId: string, email: string): string {
-    return this.jwtService.sign({ sub: userId, username: email });
+  /** 生成短期 accessToken（2h） */
+  private generateAccessToken(userId: string, email: string): string {
+    return this.jwtService.sign(
+      { sub: userId, username: email, type: 'access' },
+      { expiresIn: '2h' },
+    );
+  }
+
+  /** 生成长期 refreshToken（7d） */
+  private generateRefreshToken(userId: string, email: string): string {
+    return this.jwtService.sign(
+      { sub: userId, username: email, type: 'refresh' },
+      { expiresIn: '7d' },
+    );
+  }
+
+  /** 使用 refreshToken 换取新的 accessToken + refreshToken */
+  async refreshAuth(oldRefreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(oldRefreshToken);
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('无效的 refresh token');
+      }
+      const user = await this.findById(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('用户不存在');
+      }
+      const accessToken = this.generateAccessToken(user.id, user.email);
+      const refreshToken = this.generateRefreshToken(user.id, user.email);
+      return this.buildAuthPayload(user, accessToken, refreshToken);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException('refresh token 已过期，请重新登录');
+    }
   }
 
   private handlePrismaError(error: any): never {

@@ -7,7 +7,14 @@ import { PrismaService } from '../prisma.service';
  * RAG 检索结果
  */
 export interface RetrievalResult {
-  type: 'world_setting' | 'plot_line' | 'character' | 'foreshadowing' | 'chapter_summary' | 'scene' | 'event';
+  type:
+    | 'world_setting'
+    | 'plot_line'
+    | 'character'
+    | 'foreshadowing'
+    | 'chapter_summary'
+    | 'scene'
+    | 'event';
   content: string;
   sourceId: string;
   score: number;
@@ -47,7 +54,7 @@ export class RagService {
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
-    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY');
+    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY') ?? '';
   }
 
   // ==================== Embedding 管理 ====================
@@ -95,7 +102,7 @@ export class RagService {
     await this.prisma.embedding.upsert({
       where: {
         // 使用 sourceId 查找
-        id: await this.findEmbeddingId(sourceType, sourceId) || 'non-existent',
+        id: (await this.findEmbeddingId(sourceType, sourceId)) || 'non-existent',
       },
       update: {
         content,
@@ -135,18 +142,29 @@ export class RagService {
         const text = `题材:${ws.genre || ''} 主题:${ws.theme || ''} 风格:${ws.tone || ''}`;
         await this.upsertEmbedding('world_setting', ws.id, bookId, text, { type: 'world_setting' });
         indexed++;
-      } catch { failed++; }
+      } catch {
+        failed++;
+      }
     }
 
     // 索引剧情线
     const plotLines = await this.prisma.plotLine.findMany({ where: { bookId } });
     for (const pl of plotLines) {
       try {
-        await this.upsertEmbedding('plot_line', pl.id, bookId, `${pl.title}: ${pl.description || ''}`, {
-          type: pl.type, status: pl.status,
-        });
+        await this.upsertEmbedding(
+          'plot_line',
+          pl.id,
+          bookId,
+          `${pl.title}: ${pl.description || ''}`,
+          {
+            type: pl.type,
+            status: pl.status,
+          },
+        );
         indexed++;
-      } catch { failed++; }
+      } catch {
+        failed++;
+      }
     }
 
     // 索引角色
@@ -161,21 +179,33 @@ export class RagService {
           ? `${c.name}(${c.role || ''}): 性格=${profile.personality || ''}, 背景=${profile.background || ''}, 动机=${profile.motivation || ''}, 目标=${profile.currentGoal || ''}`
           : `${c.name}(${c.role || ''}): ${c.bio || ''}`;
         await this.upsertEmbedding('character', c.id, bookId, text, {
-          name: c.name, role: c.role,
+          name: c.name,
+          role: c.role,
         });
         indexed++;
-      } catch { failed++; }
+      } catch {
+        failed++;
+      }
     }
 
     // 索引伏笔
     const foreshadowings = await this.prisma.foreshadowing.findMany({ where: { bookId } });
     for (const f of foreshadowings) {
       try {
-        await this.upsertEmbedding('foreshadowing', f.id, bookId, `伏笔: ${f.title} - ${f.content}`, {
-          status: f.status, chapterId: f.chapterId,
-        });
+        await this.upsertEmbedding(
+          'foreshadowing',
+          f.id,
+          bookId,
+          `伏笔: ${f.title} - ${f.content}`,
+          {
+            status: f.status,
+            chapterId: f.chapterId,
+          },
+        );
         indexed++;
-      } catch { failed++; }
+      } catch {
+        failed++;
+      }
     }
 
     // 索引章节摘要
@@ -187,10 +217,14 @@ export class RagService {
       if (ch.chapterSummary) {
         try {
           await this.upsertEmbedding('chapter_summary', ch.id, bookId, ch.chapterSummary.summary, {
-            chapterId: ch.id, chapterTitle: ch.title, order: ch.order,
+            chapterId: ch.id,
+            chapterTitle: ch.title,
+            order: ch.order,
           });
           indexed++;
-        } catch { failed++; }
+        } catch {
+          failed++;
+        }
       }
     }
 
@@ -234,7 +268,7 @@ export class RagService {
 
     // 去重（按 sourceId）
     const seen = new Set<string>();
-    const deduped = results.filter(r => {
+    const deduped = results.filter((r) => {
       const key = `${r.type}:${r.sourceId}`;
       if (seen.has(key)) return false;
       seen.add(key);
@@ -244,7 +278,7 @@ export class RagService {
     // 过滤类型
     let filtered = deduped;
     if (options.includeTypes && options.includeTypes.length > 0) {
-      filtered = deduped.filter(r => options.includeTypes.includes(r.type));
+      filtered = deduped.filter((r) => options.includeTypes!.includes(r.type));
     }
 
     // 按 score 降序排列
@@ -256,7 +290,11 @@ export class RagService {
   /**
    * 向量相似度搜索 (Top-K)
    */
-  private async vectorSearch(bookId: string, queryText: string, limit: number): Promise<RetrievalResult[]> {
+  private async vectorSearch(
+    bookId: string,
+    queryText: string,
+    limit: number,
+  ): Promise<RetrievalResult[]> {
     const queryVector = await this.getEmbedding(queryText);
     if (queryVector.length === 0) return [];
 
@@ -268,22 +306,24 @@ export class RagService {
     if (embeddings.length === 0) return [];
 
     // 计算余弦相似度
-    const scored = embeddings.map(emb => {
-      let vector: number[];
-      try {
-        vector = JSON.parse(emb.vector);
-      } catch {
-        return null;
-      }
-      const score = this.cosineSimilarity(queryVector, vector);
-      return {
-        type: emb.sourceType as any,
-        content: emb.content,
-        sourceId: emb.sourceId,
-        score,
-        metadata: emb.metadata ? JSON.parse(emb.metadata) : undefined,
-      };
-    }).filter(Boolean) as RetrievalResult[];
+    const scored = embeddings
+      .map((emb) => {
+        let vector: number[];
+        try {
+          vector = JSON.parse(emb.vector);
+        } catch {
+          return null;
+        }
+        const score = this.cosineSimilarity(queryVector, vector);
+        return {
+          type: emb.sourceType as any,
+          content: emb.content,
+          sourceId: emb.sourceId,
+          score,
+          metadata: emb.metadata ? JSON.parse(emb.metadata) : undefined,
+        };
+      })
+      .filter(Boolean) as RetrievalResult[];
 
     // 按相似度排序取 Top-K
     scored.sort((a, b) => b.score - a.score);
@@ -376,7 +416,11 @@ export class RagService {
   /**
    * 加载最近章节窗口（短期记忆）
    */
-  private async loadRecentWindow(bookId: string, currentChapterId?: string, windowSize = 3): Promise<RetrievalResult[]> {
+  private async loadRecentWindow(
+    bookId: string,
+    currentChapterId?: string,
+    windowSize = 3,
+  ): Promise<RetrievalResult[]> {
     const results: RetrievalResult[] = [];
 
     let orderCondition: any = {};
@@ -403,7 +447,7 @@ export class RagService {
           type: 'chapter_summary',
           content: `第${ch.order}章「${ch.title}」: ${ch.chapterSummary.summary}`,
           sourceId: ch.id,
-          score: 0.8 + (0.05 * (windowSize - chapters.indexOf(ch))), // 越近的章节权重越高
+          score: 0.8 + 0.05 * (windowSize - chapters.indexOf(ch)), // 越近的章节权重越高
         });
       }
     }
@@ -490,7 +534,9 @@ export class RagService {
 
       // 更新 embedding 索引
       await this.upsertEmbedding('chapter_summary', chapterId, chapter.bookId, summary, {
-        chapterId, chapterTitle: chapter.title, order: chapter.order,
+        chapterId,
+        chapterTitle: chapter.title,
+        order: chapter.order,
       });
 
       return summary;
@@ -510,14 +556,21 @@ export class RagService {
     bookId: string,
     chapterId: string,
     chapterContent: string,
-  ): Promise<Array<{ foreshadowingId: string; title: string; confidence: number; suggestion: string }>> {
+  ): Promise<
+    Array<{ foreshadowingId: string; title: string; confidence: number; suggestion: string }>
+  > {
     const foreshadowings = await this.prisma.foreshadowing.findMany({
       where: { bookId, status: 'PENDING' },
     });
 
     if (foreshadowings.length === 0) return [];
 
-    const suggestions: Array<{ foreshadowingId: string; title: string; confidence: number; suggestion: string }> = [];
+    const suggestions: Array<{
+      foreshadowingId: string;
+      title: string;
+      confidence: number;
+      suggestion: string;
+    }> = [];
 
     // 获取章节内容的 embedding
     const chapterVector = await this.getEmbedding(chapterContent.slice(0, 2000));
@@ -525,7 +578,7 @@ export class RagService {
     for (const f of foreshadowings) {
       // 方法1: 关键词匹配
       const keywords = this.extractKeywords(f.title + ' ' + f.content);
-      const matchCount = keywords.filter(k => chapterContent.includes(k)).length;
+      const matchCount = keywords.filter((k) => chapterContent.includes(k)).length;
       const keywordScore = keywords.length > 0 ? matchCount / keywords.length : 0;
 
       // 方法2: 向量相似度
@@ -545,9 +598,10 @@ export class RagService {
           foreshadowingId: f.id,
           title: f.title,
           confidence,
-          suggestion: confidence > 0.6
-            ? `伏笔「${f.title}」与当前章节高度相关，建议在此处回收`
-            : `伏笔「${f.title}」可能与当前章节有关联，建议确认`,
+          suggestion:
+            confidence > 0.6
+              ? `伏笔「${f.title}」与当前章节高度相关，建议在此处回收`
+              : `伏笔「${f.title}」可能与当前章节有关联，建议确认`,
         });
       }
     }
@@ -586,15 +640,19 @@ export class RagService {
     });
 
     if (characterName) {
-      return events.filter(e => {
-        if (e.participants) {
-          try {
-            const participants = JSON.parse(e.participants);
-            return participants.includes(characterName);
-          } catch { return false; }
-        }
-        return e.description.includes(characterName);
-      }).slice(0, limit);
+      return events
+        .filter((e) => {
+          if (e.participants) {
+            try {
+              const participants = JSON.parse(e.participants);
+              return participants.includes(characterName);
+            } catch {
+              return false;
+            }
+          }
+          return e.description.includes(characterName);
+        })
+        .slice(0, limit);
     }
 
     return events.slice(0, limit);
@@ -607,7 +665,18 @@ export class RagService {
     const chineseWords = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
     const englishWords = text.match(/[a-zA-Z]{3,}/g) || [];
     // 去除常见停用词
-    const stopWords = new Set(['一个', '没有', '可以', '这个', '那个', '已经', '所以', '因为', '但是', '如果']);
-    return [...new Set([...chineseWords, ...englishWords])].filter(w => !stopWords.has(w));
+    const stopWords = new Set([
+      '一个',
+      '没有',
+      '可以',
+      '这个',
+      '那个',
+      '已经',
+      '所以',
+      '因为',
+      '但是',
+      '如果',
+    ]);
+    return [...new Set([...chineseWords, ...englishWords])].filter((w) => !stopWords.has(w));
   }
 }

@@ -108,7 +108,11 @@ export class CharacterService {
   /**
    * 创建角色关系
    */
-  async createCharacterRelationship(bookId: string, fromId: string, input: CharacterRelationshipInput) {
+  async createCharacterRelationship(
+    bookId: string,
+    fromId: string,
+    input: CharacterRelationshipInput,
+  ) {
     return this.prisma.characterRelationship.create({
       data: {
         bookId,

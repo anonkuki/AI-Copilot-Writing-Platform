@@ -41,10 +41,7 @@ describe('PlannerService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PlannerService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [PlannerService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<PlannerService>(PlannerService);
@@ -55,7 +52,9 @@ describe('PlannerService', () => {
 
   describe('WorldSettings', () => {
     it('should get world settings for a book', async () => {
-      const mockSettings = [{ id: '1', bookId: 'book1', genre: '修仙', theme: '成长', tone: '轻松' }];
+      const mockSettings = [
+        { id: '1', bookId: 'book1', genre: '修仙', theme: '成长', tone: '轻松' },
+      ];
       mockPrisma.worldSetting.findMany.mockResolvedValue(mockSettings);
 
       const result = await service.getWorldSettings('book1');
@@ -114,7 +113,10 @@ describe('PlannerService', () => {
     it('should create a plot line with auto-incremented order', async () => {
       mockPrisma.plotLine.findFirst.mockResolvedValue({ order: 3 });
       mockPrisma.plotLine.create.mockResolvedValue({
-        id: 'pl1', bookId: 'book1', title: '角色线', order: 4,
+        id: 'pl1',
+        bookId: 'book1',
+        title: '角色线',
+        order: 4,
       });
 
       const result = await service.createPlotLine('book1', {
@@ -126,7 +128,9 @@ describe('PlannerService', () => {
 
     it('should create first plot line with order 1', async () => {
       mockPrisma.plotLine.findFirst.mockResolvedValue(null);
-      mockPrisma.plotLine.create.mockImplementation(({ data }) => Promise.resolve({ id: 'pl1', ...data }));
+      mockPrisma.plotLine.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'pl1', ...data }),
+      );
 
       const result = await service.createPlotLine('book1', { title: '主线' });
       expect(result.order).toBe(1);
@@ -143,9 +147,7 @@ describe('PlannerService', () => {
 
   describe('TimelineEvents', () => {
     it('should get timeline events ordered', async () => {
-      mockPrisma.timelineEvent.findMany.mockResolvedValue([
-        { id: '1', title: '事件A', order: 1 },
-      ]);
+      mockPrisma.timelineEvent.findMany.mockResolvedValue([{ id: '1', title: '事件A', order: 1 }]);
 
       const result = await service.getTimelineEvents('book1');
       expect(result).toHaveLength(1);
@@ -163,7 +165,9 @@ describe('PlannerService', () => {
 
     it('should create a timeline event', async () => {
       mockPrisma.timelineEvent.findFirst.mockResolvedValue(null);
-      mockPrisma.timelineEvent.create.mockImplementation(({ data }) => Promise.resolve({ id: 'te1', ...data }));
+      mockPrisma.timelineEvent.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'te1', ...data }),
+      );
 
       const result = await service.createTimelineEvent('book1', { title: '大战' }, 'ch1');
       expect(result.title).toBe('大战');
@@ -194,12 +198,18 @@ describe('PlannerService', () => {
     });
 
     it('should create a foreshadowing with PENDING status', async () => {
-      mockPrisma.foreshadowing.create.mockImplementation(({ data }) => Promise.resolve({ id: 'f1', ...data }));
+      mockPrisma.foreshadowing.create.mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'f1', ...data }),
+      );
 
-      const result = await service.createForeshadowing('book1', {
-        title: '神秘人的身份',
-        content: '在第三章出现的蒙面人',
-      }, 'ch3');
+      const result = await service.createForeshadowing(
+        'book1',
+        {
+          title: '神秘人的身份',
+          content: '在第三章出现的蒙面人',
+        },
+        'ch3',
+      );
 
       expect(result.status).toBe('PENDING');
       expect(result.chapterId).toBe('ch3');
@@ -207,7 +217,9 @@ describe('PlannerService', () => {
 
     it('should resolve a foreshadowing', async () => {
       mockPrisma.foreshadowing.update.mockResolvedValue({
-        id: 'f1', status: 'RESOLVED', resolveAt: 'ch10',
+        id: 'f1',
+        status: 'RESOLVED',
+        resolveAt: 'ch10',
       });
 
       const result = await service.resolveForeshadowing('f1', 'ch10');
@@ -216,7 +228,8 @@ describe('PlannerService', () => {
 
     it('should abandon a foreshadowing', async () => {
       mockPrisma.foreshadowing.update.mockResolvedValue({
-        id: 'f1', status: 'ABANDONED',
+        id: 'f1',
+        status: 'ABANDONED',
       });
 
       const result = await service.abandonForeshadowing('f1');

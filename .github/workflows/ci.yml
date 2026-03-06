@@ -29,6 +29,9 @@ jobs:
       - name: Generate Prisma Client
         run: npm run prisma:generate
 
+      - name: Lint
+        run: npx eslint . --max-warnings 100
+
       - name: Run tests
         run: npm test
 
@@ -54,6 +57,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npx eslint . --max-warnings 250
 
       - name: Build
         run: npm run build

@@ -191,11 +191,11 @@ export const useBookStore = defineStore('book', () => {
   }
 
   async function fetchChapter(chapterId: string) {
-    return apiGet<Chapter>(`/chapter/${chapterId}`);
+    return apiGet<Chapter>(`/chapters/${chapterId}`);
   }
 
   async function saveChapter(chapterId: string, data: { title?: string; content?: string }) {
-    const updated = await apiPut<Chapter>('/chapter/save', {
+    const updated = await apiPut<Chapter>('/chapters/save', {
       chapter_id: chapterId,
       ...data,
     });
@@ -239,7 +239,7 @@ export const useBookStore = defineStore('book', () => {
   }
 
   async function publishChapter(chapterId: string) {
-    const updated = await apiPost<Chapter>('/chapter/publish', { chapter_id: chapterId });
+    const updated = await apiPost<Chapter>('/chapters/publish', { chapter_id: chapterId });
     if (currentBook.value) {
       await fetchBook(currentBook.value.id);
     }
@@ -247,7 +247,7 @@ export const useBookStore = defineStore('book', () => {
   }
 
   async function scheduleChapter(chapterId: string, publishAt: string) {
-    const updated = await apiPost<Chapter>('/chapter/schedule', {
+    const updated = await apiPost<Chapter>('/chapters/schedule', {
       chapter_id: chapterId,
       publish_at: publishAt,
     });
@@ -258,11 +258,11 @@ export const useBookStore = defineStore('book', () => {
   }
 
   async function fetchChapterHistory(chapterId: string) {
-    return apiGet<ChapterVersion[]>(`/chapter/history/${chapterId}`);
+    return apiGet<ChapterVersion[]>(`/chapters/history/${chapterId}`);
   }
 
   async function rollbackChapter(chapterId: string, versionId: string) {
-    const chapter = await apiPost<Chapter>('/chapter/rollback', {
+    const chapter = await apiPost<Chapter>('/chapters/rollback', {
       chapter_id: chapterId,
       version_id: versionId,
     });
@@ -276,7 +276,7 @@ export const useBookStore = defineStore('book', () => {
     bookId: string,
     chapters: { id: string; order: number; volumeId?: string | null }[],
   ) {
-    await apiPost('/chapter/reorder', {
+    await apiPost('/chapters/reorder', {
       book_id: bookId,
       chapters: chapters.map((item) => ({
         id: item.id,

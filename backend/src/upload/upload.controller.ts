@@ -23,10 +23,7 @@ export class UploadController {
       },
     }),
   )
-  async uploadCover(
-    @UploadedFile() file?: any,
-    @Body('coverUrl') coverUrl?: string,
-  ) {
+  async uploadCover(@UploadedFile() file?: any, @Body('coverUrl') coverUrl?: string) {
     if (coverUrl && coverUrl.trim()) {
       return { coverUrl: coverUrl.trim() };
     }

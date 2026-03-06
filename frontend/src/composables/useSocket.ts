@@ -28,6 +28,7 @@
 import { ref, onUnmounted } from 'vue';
 import { io, Socket } from 'socket.io-client';
 import { useDocumentStore } from '@/stores/document';
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * 全局 Socket 实例
@@ -37,15 +38,30 @@ import { useDocumentStore } from '@/stores/document';
 let socket: Socket | null = null;
 
 /**
+ * 远程内容更新回调
+ * 允许外部组件（如编辑器）注册回调处理远程内容更新
+ */
+type ContentUpdateCallback = (data: { content: string; version: number; userId: string; userName: string }) => void;
+let onContentUpdateCallback: ContentUpdateCallback | null = null;
+
+/**
  * 使用 Socket 的组合式函数
  * 在组件中调用 useSocket() 即可使用所有 Socket 功能
  */
 export function useSocket() {
   // 获取文档 store，用于更新状态
   const documentStore = useDocumentStore();
+  const authStore = useAuthStore();
 
   // 本地连接状态（可选使用）
   const isConnected = ref(false);
+
+  /**
+   * 设置内容更新回调（供编辑器组件使用）
+   */
+  function onContentUpdate(callback: ContentUpdateCallback | null) {
+    onContentUpdateCallback = callback;
+  }
 
   /**
    * 连接到 Socket 服务器
@@ -61,9 +77,22 @@ export function useSocket() {
     const socketUrl =
       import.meta.env.VITE_SOCKET_URL ||
       (apiBaseUrl ? `${apiBaseUrl}/documents` : 'http://localhost:3001/documents');
+
+    // 从 auth store 获取 JWT token，传递给 WebSocket 握手
+    const authToken = authStore.token;
+    if (!authToken) {
+      console.warn('🔌 Socket: 用户未登录，无法建立 WebSocket 连接');
+      documentStore.setSocketStatus('disconnected');
+      return;
+    }
+
     socket = io(socketUrl, {
       // 传输方式：优先使用 WebSocket，如果失败则降级到轮询
       transports: ['websocket', 'polling'],
+      // 通过 auth 传递 JWT token，后端 handleConnection 会验证
+      auth: {
+        token: authToken,
+      },
     });
 
     // ====== 监听服务器发来的事件 ======
@@ -110,11 +139,18 @@ export function useSocket() {
     // ====== 内容同步事件 ======
 
     // 收到远程内容更新
-    socket.on('content-updated', (data: { content: string; version: number }) => {
-      console.log('📝 Content updated from remote');
-      // 更新文档内容
-      documentStore.updateContentFromRemote(data.content, data.version);
-    });
+    socket.on(
+      'content-updated',
+      (data: { content: string; version: number; userId: string; userName: string }) => {
+        console.log('📝 Content updated from remote');
+        // 调用外部回调（如编辑器组件）
+        if (onContentUpdateCallback) {
+          onContentUpdateCallback(data);
+        }
+        // 同时更新 documentStore（兼容旧逻辑）
+        documentStore.updateContentFromRemote(data.content, data.version);
+      },
+    );
   }
 
   /**
@@ -187,5 +223,6 @@ export function useSocket() {
     leaveDocument,
     emitContentUpdate,
     emitCursorUpdate,
+    onContentUpdate,
   };
 }

@@ -49,11 +49,13 @@ const mockConfigService = {
 jest.mock('axios', () => ({
   post: jest.fn().mockResolvedValue({
     data: {
-      choices: [{
-        message: {
-          content: '{"issues": []}',
+      choices: [
+        {
+          message: {
+            content: '{"issues": []}',
+          },
         },
-      }],
+      ],
     },
   }),
 }));
@@ -98,8 +100,12 @@ describe('ConsistencyService', () => {
 
     it('should create a consistency rule', async () => {
       mockPrisma.consistencyRule.create.mockResolvedValue({
-        id: 'r1', bookId: 'book1', name: '能力限制', type: 'character_ability',
-        condition: '{"operator":"contains","value":"瞬移"}', severity: 'ERROR',
+        id: 'r1',
+        bookId: 'book1',
+        name: '能力限制',
+        type: 'character_ability',
+        condition: '{"operator":"contains","value":"瞬移"}',
+        severity: 'ERROR',
       });
 
       const result = await service.createRule('book1', {
@@ -137,7 +143,9 @@ describe('ConsistencyService', () => {
   describe('checkChapter', () => {
     it('should return perfect score for empty/short content', async () => {
       mockPrisma.chapter.findUnique.mockResolvedValue({
-        id: 'ch1', content: '短文', order: 1,
+        id: 'ch1',
+        content: '短文',
+        order: 1,
       });
 
       const result = await service.checkChapter('book1', 'ch1');
@@ -148,20 +156,22 @@ describe('ConsistencyService', () => {
     it('should throw for non-existent chapter', async () => {
       mockPrisma.chapter.findUnique.mockResolvedValue(null);
 
-      await expect(service.checkChapter('book1', 'nonexistent'))
-        .rejects.toThrow('章节不存在');
+      await expect(service.checkChapter('book1', 'nonexistent')).rejects.toThrow('章节不存在');
     });
 
     it('should perform full check for valid chapter content', async () => {
       mockPrisma.chapter.findUnique.mockResolvedValue({
         id: 'ch1',
-        content: '林渊轻而易举地施展了瞬移术，他原本恐高的弱点似乎完全消失了。这一切让人难以置信，但时间线上似乎没有任何问题。',
+        content:
+          '林渊轻而易举地施展了瞬移术，他原本恐高的弱点似乎完全消失了。这一切让人难以置信，但时间线上似乎没有任何问题。',
         order: 5,
       });
       mockPrisma.consistencyRule.findMany.mockResolvedValue([]);
       mockPrisma.character.findMany.mockResolvedValue([
         {
-          id: 'c1', name: '林渊', role: '主角',
+          id: 'c1',
+          name: '林渊',
+          role: '主角',
           profile: { personality: '冷静', weakness: '恐高', strength: '剑术' },
           fromRels: [],
         },
@@ -189,7 +199,9 @@ describe('ConsistencyService', () => {
     it('should calculate score correctly (private method via integration)', async () => {
       // Test through the public API - short content returns 1.0
       mockPrisma.chapter.findUnique.mockResolvedValue({
-        id: 'ch1', content: '短内容', order: 1,
+        id: 'ch1',
+        content: '短内容',
+        order: 1,
       });
 
       const result = await service.checkChapter('book1', 'ch1');
@@ -210,7 +222,9 @@ describe('ConsistencyService', () => {
 
       // Mock checkChapter internals
       mockPrisma.chapter.findUnique.mockResolvedValue({
-        id: 'ch1', content: '短', order: 1,
+        id: 'ch1',
+        content: '短',
+        order: 1,
       });
 
       const result = await service.scanBook('book1');

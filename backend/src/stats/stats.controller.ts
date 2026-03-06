@@ -14,10 +14,7 @@ export class StatsController {
   }
 
   @Put('update')
-  async updateStats(
-    @Request() req: any,
-    @Body() body: { wordCount: number; date?: string },
-  ) {
+  async updateStats(@Request() req: any, @Body() body: { wordCount: number; date?: string }) {
     return this.statsService.updateStats(req.user.userId, body.wordCount, body.date);
   }
 }

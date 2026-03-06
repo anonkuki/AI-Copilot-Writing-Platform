@@ -1,33 +1,119 @@
+<div align="center">
+
 # AI+ 智能写作平台
 
-<p align="center">
+**面向长篇小说 / 网文创作的全栈 AI 辅助写作系统**
+
+<p>
   <img src="https://img.shields.io/badge/Frontend-Vue%203.5-42b883" alt="Vue" />
   <img src="https://img.shields.io/badge/Backend-NestJS%2010-e0234e" alt="NestJS" />
   <img src="https://img.shields.io/badge/Database-Prisma%20%2B%20SQLite-2D3748" alt="Prisma" />
   <img src="https://img.shields.io/badge/Realtime-Socket.io-010101" alt="Socket.io" />
-  <img src="https://img.shields.io/badge/AI-DeepSeek%20V3-FF6C37" alt="AI" />
+  <img src="https://img.shields.io/badge/AI-DeepSeek%20V3.2-FF6C37" alt="AI" />
   <img src="https://img.shields.io/badge/Desktop-Electron%2028-47848F" alt="Electron" />
+  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License" />
 </p>
 
-> 面向网文 / 长篇小说创作场景的全栈 AI 辅助写作系统：提供书籍-卷-章结构化管理、实时协作编辑、三层 AI 写作代理（战略-战术-执行）、角色关系网络、Copilot 风格行内润色与一致性检查。支持 Web 部署与 Electron 桌面应用打包。
+<p>
+  <img src="picture/主页.png" alt="AI+ 主页" width="80%" />
+</p>
+
+> 提供书籍-卷-章结构化管理、实时协作编辑、三层 AI 写作代理（战略-战术-执行）、角色关系网络、Copilot 风格行内润色与一致性检查。通过 **SiliconFlow** 平台调用 **DeepSeek-V3.2** 大语言模型，支持 Web 部署与 Electron 桌面应用打包，可完全私有化部署到本地。
+
+</div>
 
 ---
 
 ## 目录
 
+- [产品截图展示](#产品截图展示)
 - [项目定位](#项目定位)
 - [核心功能](#核心功能)
 - [技术栈](#技术栈)
 - [系统架构](#系统架构)
+- [AI 模型与 API 调用详解](#ai-模型与-api-调用详解)
 - [数据模型](#数据模型)
-- [快速开始](#快速开始)
-- [环境变量](#环境变量)
+- [本地部署指南](#本地部署指南)
+- [环境变量配置](#环境变量配置)
 - [常用命令](#常用命令)
 - [API 与模块说明](#api-与模块说明)
-- [部署指南](#部署指南)
+- [生产部署方案](#生产部署方案)
 - [Electron 桌面应用](#electron-桌面应用)
 - [工程化与安全](#工程化与安全)
+- [项目结构](#项目结构)
 - [常见问题](#常见问题)
+
+---
+
+## 产品截图展示
+
+### 登录页
+
+用户注册与登录界面，采用 JWT 无状态令牌鉴权，支持安全的用户隔离。
+
+<p align="center">
+  <img src="picture/登录页.png" alt="登录页" width="80%" />
+</p>
+
+### 主页仪表板
+
+书籍管理主页，展示用户全部创作项目，支持新建书籍、卷、章节的全链路管理。
+
+<p align="center">
+  <img src="picture/主页.png" alt="主页仪表板" width="80%" />
+</p>
+
+### 写作编辑页
+
+基于 TipTap (ProseMirror) 的富文本编辑器，支持 Slash Command 菜单、Markdown 快捷键、实时协作与自动保存。
+
+<p align="center">
+  <img src="picture/写作页.png" alt="写作编辑页" width="80%" />
+</p>
+
+### AI 助手面板
+
+右侧滑出式 AI 助手面板，支持基于文档上下文的智能问答、续写、改写和摘要生成，所有 AI 响应均通过 SSE 流式传输实时展示。
+
+<p align="center">
+  <img src="picture/ai助手.png" alt="AI 助手面板" width="80%" />
+</p>
+
+### Copilot 行内润色 (Diff 对比)
+
+选中文本后触发 AI 行内润色，系统返回红绿 Diff 对比建议，用户可逐条接受或拒绝，体验类似 GitHub Copilot。
+
+<p align="center">
+  <img src="picture/润色diff.png" alt="润色 Diff 对比" width="80%" />
+</p>
+
+### 实际使用场景 — AI 大纲辅助创作
+
+以下展示完整的 AI 辅助大纲规划流程：
+
+**第一步：向 AI 提出大纲规划问题**
+
+<p align="center">
+  <img src="picture/实际使用场景_大纲提问.png" alt="大纲提问" width="80%" />
+</p>
+
+**第二步：AI 深度思考分析**
+
+<p align="center">
+  <img src="picture/实际使用场景_大纲思考.png" alt="大纲思考" width="80%" />
+</p>
+
+**第三步：AI 处理上下文与结构化信息**
+
+<p align="center">
+  <img src="picture/实际使用场景_大纲处理.png" alt="大纲处理" width="80%" />
+</p>
+
+**第四步：获得结构化大纲结果**
+
+<p align="center">
+  <img src="picture/实际使用场景_大纲结果.png" alt="大纲结果" width="80%" />
+</p>
 
 ---
 
@@ -52,12 +138,22 @@ AI+ 面向 **可持续长篇写作生产** 而非一次性对话：
 - 字数统计与写作日历
 
 ### AI 辅助创作
+
+<p align="center">
+  <img src="picture/ai助手.png" alt="AI 辅助创作" width="60%" />
+</p>
+
 - **续写 / 改写 / 摘要**：基于上下文的 SSE 流式生成
 - **Copilot 行内润色**：选中文本后获取红绿 Diff 对比建议，逐条接受/拒绝
 - **角色/大纲/世界观 AI 补全**：字段级智能建议，一键采纳
 - **关系网络 AI 建议**：自动分析角色并推荐缺失关系
 
 ### 全屏编辑器
+
+<p align="center">
+  <img src="picture/写作页.png" alt="全屏编辑器" width="60%" />
+</p>
+
 - **角色编辑器**：基本信息 / 性格心理 / 能力成长 / 背景故事 四维管理
 - **世界观编辑器**：流派 / 基调 / 力量体系 / 地理 / 社会 / 历史 / 规则
 - **剧情线编辑器**：主线 / 副线 / 角色线，含冲突-高潮-结局结构
@@ -118,11 +214,12 @@ AI+ 面向 **可持续长篇写作生产** 而非一次性对话：
 
 ### AI 模型
 
-| 提供商 | 模型 | API |
-|--------|------|-----|
-| SiliconFlow | DeepSeek-V3.2 | `https://api.siliconflow.cn/v1/chat/completions` |
+| 提供商 | 模型 | 用途 | API 端点 |
+|--------|------|------|----------|
+| SiliconFlow | DeepSeek-V3.2 | 对话/续写/润色/补全 | `https://api.siliconflow.cn/v1/chat/completions` |
+| SiliconFlow | BAAI/bge-large-zh-v1.5 | RAG 向量嵌入检索 | `https://api.siliconflow.cn/v1/embeddings` |
 
-支持 SSE 流式输出（续写/润色）与常规 JSON 响应（角色/大纲/关系建议）。
+支持 **SSE 流式输出**（续写/润色/对话）与 **常规 JSON 响应**（角色/大纲/关系建议）。
 
 ---
 
@@ -162,6 +259,140 @@ AI+ 面向 **可持续长篇写作生产** 而非一次性对话：
 
 ---
 
+## AI 模型与 API 调用详解
+
+本项目通过 **SiliconFlow** 云平台统一调用 AI 大语言模型，所有 AI 请求均在后端发起，前端不直接接触 API 密钥，确保安全性。
+
+### API 提供商与模型
+
+| 提供商 | 平台地址 | 模型标识 | 用途 |
+|--------|----------|----------|------|
+| [SiliconFlow](https://siliconflow.cn) | `https://api.siliconflow.cn` | `deepseek-ai/DeepSeek-V3.2` | 对话、续写、润色、角色补全、大纲规划 |
+| [SiliconFlow](https://siliconflow.cn) | `https://api.siliconflow.cn` | `BAAI/bge-large-zh-v1.5` | RAG 向量嵌入与语义检索 |
+
+> **如何获取 API Key**：访问 [SiliconFlow 控制台](https://cloud.siliconflow.cn) 注册账号 → 创建 API Key → 填入后端环境变量 `SILICONFLOW_API_KEY`。
+
+### 后端 AI 调用架构
+
+项目中有 **4 个核心服务** 直接调用 SiliconFlow API：
+
+#### 1. `backend/src/ai/ai.service.ts` — AI 通用服务
+
+负责文档问答、写作辅助等 **非流式** 请求：
+
+```typescript
+// 调用方式：标准 HTTP POST 请求
+const response = await axios.post(
+  'https://api.siliconflow.cn/v1/chat/completions',
+  {
+    model: 'deepseek-ai/DeepSeek-V3.2',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature: 0.7,
+    max_tokens: 2000
+  },
+  {
+    timeout: 30000,  // 可通过 SILICONFLOW_TIMEOUT_MS 配置
+    headers: {
+      Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  }
+);
+return response.data.choices[0].message.content;
+```
+
+#### 2. `backend/src/agent/orchestrator.service.ts` — 核心编排器
+
+三层 AI 代理的核心，负责 **续写、多候选生成、行内润色** 等 **流式 (SSE)** 请求：
+
+```typescript
+// 流式调用：通过 stream: true 开启 SSE
+const response = await axios.post(url, {
+  model: 'deepseek-ai/DeepSeek-V3.2',
+  messages: [...],
+  stream: true       // 关键：启用流式传输
+}, {
+  responseType: 'stream'  // Axios 以流方式接收
+});
+
+// 解析 SSE 数据
+response.data.on('data', (buf: Buffer) => {
+  const lines = buf.toString().split('\n')
+    .filter(l => l.trim().startsWith('data:'));
+  for (const line of lines) {
+    const json = line.replace(/^data:\s*/, '').trim();
+    if (json === '[DONE]') break;
+    const parsed = JSON.parse(json);
+    const token = parsed.choices[0].delta.content;
+    onChunk(token);  // 实时将 token 推送给前端
+  }
+});
+```
+
+#### 3. `backend/src/rag/rag.service.ts` — RAG 检索增强
+
+调用 **Embedding API** 将文本向量化，支持语义检索：
+
+```typescript
+// 向量嵌入调用
+const response = await axios.post(
+  'https://api.siliconflow.cn/v1/embeddings',
+  {
+    model: 'BAAI/bge-large-zh-v1.5',
+    input: text
+  },
+  { headers: { Authorization: `Bearer ${API_KEY}` } }
+);
+return response.data.data[0].embedding;  // 返回向量数组
+```
+
+#### 4. `backend/src/consistency/consistency.service.ts` — 一致性检查
+
+利用 AI 分析文本中的逻辑矛盾、角色行为偏差等问题，返回结构化检查报告。
+
+### 前端 AI 交互流程
+
+```
+用户操作 (选中文本/点击按钮)
+    │
+    ▼
+前端 Store (agent.ts / ai.ts)
+    │  发起 HTTP 请求到后端 /ai/* 端点
+    ▼
+Axios 封装层 (lib/api.ts)
+    │  自动附加 JWT Bearer Token
+    ▼
+后端 NestJS Controller (agent.controller.ts / ai.controller.ts)
+    │
+    ▼
+Service 层拼接 Prompt + 上下文
+    │
+    ▼
+调用 SiliconFlow API (DeepSeek-V3.2)
+    │
+    ▼  流式: SSE → EventSource 实时推送
+    ▼  非流式: JSON → 标准 HTTP 响应
+前端展示结果 (AI 面板 / Diff 对比 / 编辑器内嵌)
+```
+
+### 流式端点一览
+
+| 端点 | 方法 | 说明 | 流式 |
+|------|------|------|------|
+| `/ai/chat` | POST | AI 对话 (基于文档上下文) | ✅ SSE |
+| `/ai/deep-think-chat` | POST | 深度思考对话 (含推理过程) | ✅ SSE |
+| `/ai/inline-polish` | POST | Copilot 行内润色建议 | ✅ SSE |
+| `/ai/generate/continue` | POST | 多候选续写生成 | ✅ SSE |
+| `/ai/ask` | POST | 文档问答 | ❌ JSON |
+| `/ai/suggest` | POST | 写作建议 | ❌ JSON |
+| `/ai/assist-content` | POST | 字段级 AI 补全 | ❌ JSON |
+| `/ai/suggest-relationships` | POST | 角色关系 AI 建议 | ❌ JSON |
+
+---
+
 ## 数据模型
 
 项目使用 Prisma + SQLite，共 **31 个数据模型**：
@@ -189,76 +420,140 @@ TeamInvite     Tag / DocumentTag    ChapterVersion           Foreshadowing
 
 ---
 
-## 快速开始
+## 本地部署指南
+
+本节详细说明如何将 AI+ 完整部署到本地开发机/服务器上运行。
 
 ### 环境要求
 
-- **Node.js** >= 18
-- **npm** >= 9
-- （可选）Redis — 用于缓存增强
+| 依赖 | 版本要求 | 说明 |
+|------|----------|------|
+| **Node.js** | >= 18 | 推荐使用 LTS 版本 |
+| **npm** | >= 9 | 随 Node.js 安装 |
+| **Git** | 最新版 | 代码版本管理 |
+| **Redis** | (可选) | 用于缓存增强，非必须 |
 
-### 1. 克隆项目
+> **Windows 用户**：推荐使用 PowerShell 7+ 或 Git Bash 执行以下命令。
+
+### 第一步：克隆项目
 
 ```bash
 git clone <your-repo-url> ai-plus
 cd ai-plus
 ```
 
-### 2. 安装依赖
+### 第二步：安装依赖
 
 ```bash
-# 后端
+# 后端依赖
 cd backend
 npm install
 
-# 前端
+# 前端依赖
 cd ../frontend
 npm install
 ```
 
-### 3. 配置环境变量
+### 第三步：获取 SiliconFlow API Key
+
+1. 访问 [SiliconFlow 云平台](https://cloud.siliconflow.cn) 注册账号
+2. 进入控制台 → API Keys → 创建新密钥
+3. 复制生成的 API Key（格式：`sk-xxxxxxxxxxxx`）
+
+> **免费额度**：SiliconFlow 提供新用户免费额度，可直接用于开发测试。
+
+### 第四步：配置环境变量
 
 ```bash
-# 后端
+# 后端环境变量
 cd backend
-cp .env.example .env
-# 编辑 .env，至少配置 JWT_SECRET 和 SILICONFLOW_API_KEY
-
-# 前端
-cd ../frontend
-cp .env.example .env
-# 本地开发通常无需修改
+# Windows PowerShell:
+Copy-Item .env.example .env
+# Linux/macOS:
+# cp .env.example .env
 ```
 
-> **Windows PowerShell**: 使用 `Copy-Item .env.example .env`
+编辑 `backend/.env`，**至少配置以下两项**：
 
-### 4. 初始化数据库
+```env
+# ========== 必填 ==========
+JWT_SECRET=your-strong-random-secret-key-at-least-32-chars
+SILICONFLOW_API_KEY=sk-your-api-key-from-siliconflow
+
+# ========== 可选（有默认值）==========
+NODE_ENV=development
+PORT=3001
+CORS_ORIGIN=http://localhost:5173
+DATABASE_URL=file:./dev.db
+SILICONFLOW_API_URL=https://api.siliconflow.cn/v1/chat/completions
+SILICONFLOW_MODEL=deepseek-ai/DeepSeek-V3.2
+SILICONFLOW_TIMEOUT_MS=30000
+```
+
+前端通常无需修改环境变量，本地开发会自动通过 Vite 代理转发到后端：
+
+```bash
+cd ../frontend
+# Windows PowerShell:
+Copy-Item .env.example .env
+# 本地开发保持 VITE_API_URL 为空即可
+```
+
+### 第五步：初始化数据库
 
 ```bash
 cd backend
+
+# 生成 Prisma Client（类型安全的数据库访问层）
 npm run prisma:generate
+
+# 执行数据库迁移（自动创建 SQLite 数据库文件和全部 31 张表）
 npm run prisma:migrate
 ```
 
-### 5. 启动开发环境
+> 默认使用 **SQLite**（零配置），数据文件存储在 `backend/dev.db`。如需 PostgreSQL，参见 [数据库迁移](#数据库迁移到-postgresql) 章节。
+
+### 第六步：启动开发服务器
+
+需要同时启动前端和后端两个服务：
 
 ```bash
-# 终端 1：后端（端口 3001）
+# 终端 1：启动后端（端口 3001）
 cd backend
 npm run start:dev
 
-# 终端 2：前端（端口 5173）
+# 终端 2：启动前端（端口 5173）
 cd frontend
 npm run dev
 ```
 
-打开浏览器访问 **http://localhost:5173**
+### 第七步：访问应用
 
-- Swagger API 文档（开发环境）：**http://localhost:3001/api/docs**
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| **前端应用** | http://localhost:5173 | 主应用入口 |
+| **后端 API** | http://localhost:3001 | REST API 服务 |
+| **Swagger 文档** | http://localhost:3001/api/docs | API 交互式文档（仅开发环境） |
+| **Prisma Studio** | 运行 `npm run prisma:studio` | 数据库可视化管理 |
+
+<p align="center">
+  <img src="picture/登录页.png" alt="登录页" width="60%" />
+</p>
+
+打开浏览器访问 http://localhost:5173，注册账号即可开始使用。
+
+### 本地部署验证清单
+
+- [ ] 后端启动无报错（特别检查 `JWT_SECRET` 和 `SILICONFLOW_API_KEY`）
+- [ ] 前端 Vite 开发服务器正常运行
+- [ ] 能正常注册/登录用户
+- [ ] 能创建书籍和章节
+- [ ] AI 助手能正常对话（验证 API Key 有效）
+- [ ] 编辑器实时保存正常工作
 
 ---
 
-## 环境变量
+## 环境变量配置
 
 ### 后端 `backend/.env`
 
@@ -375,7 +670,7 @@ npm run electron:build  # 打包 Electron 安装包（Windows NSIS）
 
 ---
 
-## 部署指南
+## 生产部署方案
 
 ### 方案一：Nginx + Node.js（推荐）
 

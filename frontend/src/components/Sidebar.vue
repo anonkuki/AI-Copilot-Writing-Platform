@@ -7,6 +7,10 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
+function showComingSoon(label: string) {
+  window.alert(`${label}：即将上线`);
+}
+
 interface NavItem {
   id: string;
   label: string;
@@ -53,10 +57,18 @@ function handleLogout() {
 
 <template>
   <aside class="w-[140px] h-full bg-white border-r border-border flex flex-col shrink-0">
+    <!-- 顶部 Logo 品牌区 -->
+    <div class="pt-6 pb-4 px-3 flex flex-col items-center">
+      <div class="w-12 h-12 mb-2 bg-brand rounded-xl border border-white shadow-sm flex items-center justify-center p-1.5 ring-1 ring-brand/10">
+        <img src="/logo.png" alt="智文写作助手" class="w-full h-full object-contain filter brightness-0 invert" />
+      </div>
+      <h2 class="text-sm font-bold text-text-primary tracking-wide">智文写作助手</h2>
+    </div>
+
     <!-- 用户头像区 -->
-    <div class="flex flex-col items-center pt-5 pb-3 px-3">
-      <div class="w-14 h-14 rounded-full bg-brand-50 border-2 border-brand/20 flex items-center justify-center overflow-hidden mb-2">
-        <svg v-if="!authStore.user?.avatar" class="w-7 h-7 text-brand" fill="currentColor" viewBox="0 0 24 24">
+    <div class="flex flex-col items-center pb-4 px-3 pt-2">
+      <div class="w-10 h-10 rounded-full bg-surface-secondary border border-border flex items-center justify-center overflow-hidden mb-1.5 shadow-sm">
+        <svg v-if="!authStore.user?.avatar" class="w-5 h-5 text-text-muted" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
         <img v-else :src="authStore.user.avatar" class="w-full h-full object-cover" />
@@ -65,7 +77,7 @@ function handleLogout() {
     </div>
 
     <!-- 主导航 -->
-    <nav class="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
+    <nav class="flex-1 overflow-y-auto px-2 py-2 space-y-1 border-t border-border/50">
       <button
         v-for="item in mainNav"
         :key="item.id"
@@ -118,7 +130,7 @@ function handleLogout() {
       <button
         v-for="item in bottomNav"
         :key="item.id"
-        @click="alert(`${item.label}：即将上线`)"
+        @click="showComingSoon(item.label)"
         class="w-full flex flex-col items-center gap-1 py-2 rounded-lg text-xs text-text-muted hover:bg-surface-hover hover:text-text-secondary transition-colors duration-150"
       >
         <svg v-if="item.icon === 'help'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">

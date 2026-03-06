@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { VolumeService } from './volume.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -22,11 +32,7 @@ export class VolumeController {
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() body: { title?: string },
-    @Request() req: any,
-  ) {
+  async update(@Param('id') id: string, @Body() body: { title?: string }, @Request() req: any) {
     return this.volumeService.update(id, req.user.userId, body);
   }
 

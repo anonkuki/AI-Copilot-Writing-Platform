@@ -7,7 +7,13 @@ import { PrismaService } from '../prisma.service';
  * 一致性检查问题
  */
 export interface ConsistencyIssue {
-  type: 'timeline' | 'character_ability' | 'character_personality' | 'world_rule' | 'foreshadowing' | 'logic';
+  type:
+    | 'timeline'
+    | 'character_ability'
+    | 'character_personality'
+    | 'world_rule'
+    | 'foreshadowing'
+    | 'logic';
   severity: 'ERROR' | 'WARNING' | 'INFO';
   description: string;
   suggestion?: string;
@@ -56,7 +62,7 @@ export class ConsistencyService {
     private prisma: PrismaService,
     private configService: ConfigService,
   ) {
-    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY');
+    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY') ?? '';
   }
 
   // ==================== 规则 CRUD ====================
@@ -162,12 +168,20 @@ export class ConsistencyService {
     const allIssues: ConsistencyIssue[] = [];
 
     // 1. 规则引擎检查
-    const ruleIssues = this.runRuleEngine(content, rules, characters, foreshadowings, timelineEvents);
+    const ruleIssues = this.runRuleEngine(
+      content,
+      rules,
+      characters,
+      foreshadowings,
+      timelineEvents,
+    );
     allIssues.push(...ruleIssues);
 
     // 2. 伏笔回收检查（结构化）
     const foreshadowingIssues = this.checkForeshadowingConsistency(
-      content, foreshadowings, chapter.order,
+      content,
+      foreshadowings,
+      chapter.order,
     );
     allIssues.push(...foreshadowingIssues);
 
@@ -177,7 +191,11 @@ export class ConsistencyService {
 
     // 4. LLM 语义校验
     const llmIssues = await this.llmSemanticCheck(
-      content, characters, foreshadowings, worldSettings, recentChapters,
+      content,
+      characters,
+      foreshadowings,
+      worldSettings,
+      recentChapters,
     );
     allIssues.push(...llmIssues);
 
@@ -186,7 +204,8 @@ export class ConsistencyService {
 
     // 6. 尝试生成自动修复候选
     const autoFixCandidates = await this.generateAutoFixCandidates(
-      content, allIssues.filter(i => i.severity === 'ERROR'),
+      content,
+      allIssues.filter((i) => i.severity === 'ERROR'),
     );
 
     // 7. 保存报告
@@ -209,14 +228,23 @@ export class ConsistencyService {
     overallScore: number;
     chapterResults: Array<{ chapterId: string; title: string; score: number; issueCount: number }>;
     unresolvedForeshadowings: any[];
-    taskList: Array<{ priority: 'HIGH' | 'MEDIUM' | 'LOW'; description: string; chapterId?: string }>;
+    taskList: Array<{
+      priority: 'HIGH' | 'MEDIUM' | 'LOW';
+      description: string;
+      chapterId?: string;
+    }>;
   }> {
     const chapters = await this.prisma.chapter.findMany({
       where: { bookId },
       orderBy: { order: 'asc' },
     });
 
-    const chapterResults: Array<{ chapterId: string; title: string; score: number; issueCount: number }> = [];
+    const chapterResults: Array<{
+      chapterId: string;
+      title: string;
+      score: number;
+      issueCount: number;
+    }> = [];
     const allIssues: ConsistencyIssue[] = [];
 
     for (const chapter of chapters) {
@@ -239,9 +267,10 @@ export class ConsistencyService {
     // 生成任务列表
     const taskList = this.generateTaskList(chapterResults, unresolvedForeshadowings, allIssues);
 
-    const overallScore = chapterResults.length > 0
-      ? chapterResults.reduce((sum, r) => sum + r.score, 0) / chapterResults.length
-      : 1.0;
+    const overallScore =
+      chapterResults.length > 0
+        ? chapterResults.reduce((sum, r) => sum + r.score, 0) / chapterResults.length
+        : 1.0;
 
     return { overallScore, chapterResults, unresolvedForeshadowings, taskList };
   }
@@ -260,7 +289,13 @@ export class ConsistencyService {
     for (const rule of rules) {
       try {
         const condition = JSON.parse(rule.condition);
-        const matched = this.evaluateCondition(condition, content, characters, foreshadowings, timelineEvents);
+        const matched = this.evaluateCondition(
+          condition,
+          content,
+          characters,
+          foreshadowings,
+          timelineEvents,
+        );
         if (matched) {
           issues.push({
             type: rule.type as any,
@@ -270,7 +305,7 @@ export class ConsistencyService {
           });
         }
       } catch (e) {
-        this.logger.warn(`规则解析失败: ${rule.id} - ${e.message}`);
+        this.logger.warn(`规则解析失败: ${rule.id} - ${(e as Error).message}`);
       }
     }
 
@@ -300,7 +335,7 @@ export class ConsistencyService {
         return !content.includes(condition.value);
 
       case 'character_mentions': {
-        const char = characters.find(c => c.name === condition.characterName);
+        const char = characters.find((c) => c.name === condition.characterName);
         if (!char || !content.includes(char.name)) return false;
         const forbiddenActions = condition.forbidden_actions || [];
         return forbiddenActions.some((action: string) => content.includes(action));
@@ -342,7 +377,7 @@ export class ConsistencyService {
       if (f.status === 'PENDING') {
         // 检查是否在当前章节内容中有提及（使用关键词匹配）
         const keywords = this.extractKeywords(f.title + ' ' + f.content);
-        const matchCount = keywords.filter(k => content.includes(k)).length;
+        const matchCount = keywords.filter((k) => content.includes(k)).length;
         const matchRatio = keywords.length > 0 ? matchCount / keywords.length : 0;
 
         if (matchRatio > 0.3) {
@@ -357,7 +392,7 @@ export class ConsistencyService {
     }
 
     // 检查长期未回收的伏笔
-    const pendingForeshadowings = foreshadowings.filter(f => f.status === 'PENDING');
+    const pendingForeshadowings = foreshadowings.filter((f) => f.status === 'PENDING');
     for (const f of pendingForeshadowings) {
       // 如果伏笔关联的章节存在且距离当前章节超过10章
       if (f.chapterId && currentChapterOrder > 10) {
@@ -396,7 +431,7 @@ export class ConsistencyService {
           const strengthIndicators = ['轻松', '毫不费力', '轻而易举', '不费吹灰之力'];
           for (const kw of weaknessKeywords) {
             if (surroundingText.includes(kw)) {
-              const hasEasyIndicator = strengthIndicators.some(s => surroundingText.includes(s));
+              const hasEasyIndicator = strengthIndicators.some((s) => surroundingText.includes(s));
               if (hasEasyIndicator) {
                 issues.push({
                   type: 'character_ability',
@@ -452,21 +487,31 @@ export class ConsistencyService {
     recentChapters: any[],
   ): Promise<ConsistencyIssue[]> {
     try {
-      const charSummary = characters.slice(0, 8).map(c => {
-        const p = c.profile || {};
-        return `${c.name}(${c.role || '未设定'}): 性格=${p.personality || '未设定'}, 能力=${p.strength || '未设定'}, 弱点=${p.weakness || '未设定'}, 目标=${p.currentGoal || '未设定'}`;
-      }).join('\n');
+      const charSummary = characters
+        .slice(0, 8)
+        .map((c) => {
+          const p = c.profile || {};
+          return `${c.name}(${c.role || '未设定'}): 性格=${p.personality || '未设定'}, 能力=${p.strength || '未设定'}, 弱点=${p.weakness || '未设定'}, 目标=${p.currentGoal || '未设定'}`;
+        })
+        .join('\n');
 
-      const worldSummary = worldSettings.map(ws =>
-        `题材=${ws.genre || '未设定'}, 主题=${ws.theme || '未设定'}, 风格=${ws.tone || '未设定'}`
-      ).join('\n');
+      const worldSummary = worldSettings
+        .map(
+          (ws) =>
+            `题材=${ws.genre || '未设定'}, 主题=${ws.theme || '未设定'}, 风格=${ws.tone || '未设定'}`,
+        )
+        .join('\n');
 
-      const pendingFS = foreshadowings.filter(f => f.status === 'PENDING');
-      const fsSummary = pendingFS.slice(0, 5).map(f => `「${f.title}」: ${f.content}`).join('\n');
+      const pendingFS = foreshadowings.filter((f) => f.status === 'PENDING');
+      const fsSummary = pendingFS
+        .slice(0, 5)
+        .map((f) => `「${f.title}」: ${f.content}`)
+        .join('\n');
 
-      const recentSummary = recentChapters.map(ch =>
-        ch.chapterSummary ? `第${ch.order}章: ${ch.chapterSummary.summary}` : ''
-      ).filter(Boolean).join('\n');
+      const recentSummary = recentChapters
+        .map((ch) => (ch.chapterSummary ? `第${ch.order}章: ${ch.chapterSummary.summary}` : ''))
+        .filter(Boolean)
+        .join('\n');
 
       const systemPrompt = `你是一个专业的小说编辑，负责检查文本的一致性问题。
 请严格按照JSON格式返回检查结果，不要返回其他内容。
@@ -577,7 +622,8 @@ ${content.slice(0, 4000)}
             messages: [
               {
                 role: 'system',
-                content: '你是小说编辑，请提供2种修改方案来修复以下问题。每种方案用 --- 分隔，直接给出修改后的文本片段。',
+                content:
+                  '你是小说编辑，请提供2种修改方案来修复以下问题。每种方案用 --- 分隔，直接给出修改后的文本片段。',
               },
               {
                 role: 'user',
@@ -597,7 +643,10 @@ ${content.slice(0, 4000)}
         );
 
         const text = response.data.choices[0].message.content;
-        const candidates = text.split('---').map((s: string) => s.trim()).filter(Boolean);
+        const candidates = text
+          .split('---')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
         results.push({ issueIndex: i, candidates: candidates.slice(0, 2) });
       } catch {
         // 跳过失败的修复
@@ -614,7 +663,11 @@ ${content.slice(0, 4000)}
     unresolvedForeshadowings: any[],
     allIssues: ConsistencyIssue[],
   ): Array<{ priority: 'HIGH' | 'MEDIUM' | 'LOW'; description: string; chapterId?: string }> {
-    const tasks: Array<{ priority: 'HIGH' | 'MEDIUM' | 'LOW'; description: string; chapterId?: string }> = [];
+    const tasks: Array<{
+      priority: 'HIGH' | 'MEDIUM' | 'LOW';
+      description: string;
+      chapterId?: string;
+    }> = [];
 
     // 低分章节需要重写
     for (const cr of chapterResults) {
@@ -642,7 +695,7 @@ ${content.slice(0, 4000)}
     }
 
     // ERROR 级别问题
-    const errors = allIssues.filter(i => i.severity === 'ERROR');
+    const errors = allIssues.filter((i) => i.severity === 'ERROR');
     if (errors.length > 0) {
       tasks.push({
         priority: 'HIGH',
@@ -679,16 +732,16 @@ ${content.slice(0, 4000)}
 
   private getPersonalityContradictions(): Record<string, string[]> {
     return {
-      '冷静': ['暴怒', '失控', '歇斯底里', '情绪崩溃'],
-      '理性': ['冲动', '鲁莽', '不顾后果'],
-      '温柔': ['暴力', '残忍', '冷酷无情'],
-      '勇敢': ['畏缩', '逃跑', '胆怯', '害怕得发抖'],
-      '善良': ['残忍', '邪恶', '害人'],
-      '沉默寡言': ['滔滔不绝', '话痨', '喋喋不休'],
-      '谨慎': ['鲁莽', '冲动', '不计后果'],
-      '正直': ['欺骗', '说谎', '背叛'],
-      '内向': ['热情洋溢', '侃侃而谈', '成为焦点'],
-      '骄傲': ['卑微', '乞求', '低声下气'],
+      冷静: ['暴怒', '失控', '歇斯底里', '情绪崩溃'],
+      理性: ['冲动', '鲁莽', '不顾后果'],
+      温柔: ['暴力', '残忍', '冷酷无情'],
+      勇敢: ['畏缩', '逃跑', '胆怯', '害怕得发抖'],
+      善良: ['残忍', '邪恶', '害人'],
+      沉默寡言: ['滔滔不绝', '话痨', '喋喋不休'],
+      谨慎: ['鲁莽', '冲动', '不计后果'],
+      正直: ['欺骗', '说谎', '背叛'],
+      内向: ['热情洋溢', '侃侃而谈', '成为焦点'],
+      骄傲: ['卑微', '乞求', '低声下气'],
     };
   }
 }

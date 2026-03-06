@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@ne
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BookService } from './book.service';
 
+/** @deprecated 兼容层，新代码请走 /books（BookController） */
 @Controller('book')
 @UseGuards(JwtAuthGuard)
 export class BookAliasController {

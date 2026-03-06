@@ -5,9 +5,22 @@
  * 使用 class-validator + class-transformer
  */
 import {
-  IsString, IsOptional, IsNumber, IsArray, IsBoolean, IsObject,
-  IsEnum, IsInt, Min, Max, MaxLength, MinLength, IsIn,
-  IsNotEmpty, ValidateNested, ArrayMinSize,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+  MaxLength,
+  MinLength,
+  IsIn,
+  IsNotEmpty,
+  ValidateNested,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -471,37 +484,59 @@ export class UpsertCharacterProfileDto {
   @IsNotEmpty()
   characterId: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   personality?: string;
 
-  @IsString() @IsOptional() @MaxLength(2000)
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
   background?: string;
 
-  @IsString() @IsOptional() @MaxLength(1000)
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
   motivation?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   fear?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   strength?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   weakness?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   currentGoal?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   longTermGoal?: string;
 
-  @IsString() @IsOptional() @MaxLength(500)
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
   arc?: string;
 
-  @IsString() @IsOptional() @MaxLength(1000)
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
   appearance?: string;
 
-  @IsString() @IsOptional() @MaxLength(200)
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
   catchphrase?: string;
 }
 

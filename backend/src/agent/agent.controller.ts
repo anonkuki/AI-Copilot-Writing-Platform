@@ -1,7 +1,17 @@
 import {
-  Controller, Post, Put, Delete, Body, UseGuards,
-  Get, Param, Query, HttpCode, HttpStatus,
-  BadRequestException, Res,
+  Controller,
+  Post,
+  Put,
+  Delete,
+  Body,
+  UseGuards,
+  Get,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+  Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { OrchestratorService, AgentRequest } from './orchestrator.service';
@@ -12,20 +22,39 @@ import { RagService } from '../rag/rag.service';
 import { ConsistencyService } from '../consistency/consistency.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
-  ProcessAgentDto, GenerateContinueDto, PlannerUpdateDto,
-  CreateWorldSettingDto, UpdateWorldSettingDto,
-  CreatePlotLineDto, UpdatePlotLineDto,
+  ProcessAgentDto,
+  GenerateContinueDto,
+  PlannerUpdateDto,
+  CreateWorldSettingDto,
+  UpdateWorldSettingDto,
+  CreatePlotLineDto,
+  UpdatePlotLineDto,
   CreateTimelineEventDto,
-  CreateForeshadowingDto, ResolveForeshadowingDto,
+  CreateForeshadowingDto,
+  ResolveForeshadowingDto,
   UpsertCharacterProfileDto,
-  CreateRelationshipDto, UpdateRelationshipDto,
-  LogEmotionDto, LogGrowthDto,
-  CreateSceneDto, UpdateSceneDto, ReorderScenesDto, AutoSplitScenesDto,
+  CreateRelationshipDto,
+  UpdateRelationshipDto,
+  LogEmotionDto,
+  LogGrowthDto,
+  CreateSceneDto,
+  UpdateSceneDto,
+  ReorderScenesDto,
+  AutoSplitScenesDto,
   ForeshadowingSuggestionDto,
-  CheckConsistencyDto, CreateConsistencyRuleDto, UpdateConsistencyRuleDto, ToggleRuleDto,
+  CheckConsistencyDto,
+  CreateConsistencyRuleDto,
+  UpdateConsistencyRuleDto,
+  ToggleRuleDto,
   LogEventDto,
-  CreativePlanDto, ExecuteCreativePlanDto, ChatMessageDto,
-  AnalyzeFullTextDto, DeepThinkChatDto, ToolAnalysisDto, InlinePolishDto, AssistContentDto,
+  CreativePlanDto,
+  ExecuteCreativePlanDto,
+  ChatMessageDto,
+  AnalyzeFullTextDto,
+  DeepThinkChatDto,
+  ToolAnalysisDto,
+  InlinePolishDto,
+  AssistContentDto,
 } from './dto/agent.dto';
 
 /**
@@ -117,7 +146,9 @@ export class AgentController {
 
     try {
       const result = await this.orchestrator.streamChat(
-        dto.bookId, dto.message, dto.history || [],
+        dto.bookId,
+        dto.message,
+        dto.history || [],
         (chunk) => {
           res.write(`data: ${JSON.stringify({ type: 'token', data: { text: chunk } })}\n\n`);
         },
@@ -143,7 +174,9 @@ export class AgentController {
 
     try {
       const result = await this.orchestrator.streamDeepThinkChat(
-        dto.bookId, dto.message, dto.history || [],
+        dto.bookId,
+        dto.message,
+        dto.history || [],
         (event) => {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         },
@@ -268,7 +301,9 @@ export class AgentController {
 
     try {
       await this.orchestrator.streamCreativePlan(
-        dto.bookId, dto.prompt, dto.chapterCount || 3,
+        dto.bookId,
+        dto.prompt,
+        dto.chapterCount || 3,
         (event) => {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         },
@@ -291,7 +326,9 @@ export class AgentController {
 
     try {
       await this.orchestrator.streamExecuteCreativePlan(
-        dto.bookId, dto.plan, dto.volumeId,
+        dto.bookId,
+        dto.plan,
+        dto.volumeId,
         (event) => {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         },
@@ -312,19 +349,28 @@ export class AgentController {
     let result: any;
     switch (dto.type) {
       case 'world_setting':
-        if (dto.action === 'create') result = await this.planner.createWorldSetting(dto.bookId, dto.data);
-        else if (dto.action === 'update' && dto.nodeId) result = await this.planner.updateWorldSetting(dto.nodeId, dto.data);
-        else if (dto.action === 'delete' && dto.nodeId) result = await this.planner.deleteWorldSetting(dto.nodeId);
+        if (dto.action === 'create')
+          result = await this.planner.createWorldSetting(dto.bookId, dto.data);
+        else if (dto.action === 'update' && dto.nodeId)
+          result = await this.planner.updateWorldSetting(dto.nodeId, dto.data);
+        else if (dto.action === 'delete' && dto.nodeId)
+          result = await this.planner.deleteWorldSetting(dto.nodeId);
         break;
       case 'plot_line':
-        if (dto.action === 'create') result = await this.planner.createPlotLine(dto.bookId, dto.data as any);
-        else if (dto.action === 'update' && dto.nodeId) result = await this.planner.updatePlotLine(dto.nodeId, dto.data);
-        else if (dto.action === 'delete' && dto.nodeId) result = await this.planner.deletePlotLine(dto.nodeId);
+        if (dto.action === 'create')
+          result = await this.planner.createPlotLine(dto.bookId, dto.data as any);
+        else if (dto.action === 'update' && dto.nodeId)
+          result = await this.planner.updatePlotLine(dto.nodeId, dto.data);
+        else if (dto.action === 'delete' && dto.nodeId)
+          result = await this.planner.deletePlotLine(dto.nodeId);
         break;
       case 'foreshadowing':
-        if (dto.action === 'create') result = await this.planner.createForeshadowing(dto.bookId, dto.data as any);
-        else if (dto.action === 'update' && dto.nodeId) result = await this.planner.resolveForeshadowing(dto.nodeId);
-        else if (dto.action === 'delete' && dto.nodeId) result = await this.planner.deleteForeshadowing(dto.nodeId);
+        if (dto.action === 'create')
+          result = await this.planner.createForeshadowing(dto.bookId, dto.data as any);
+        else if (dto.action === 'update' && dto.nodeId)
+          result = await this.planner.resolveForeshadowing(dto.nodeId);
+        else if (dto.action === 'delete' && dto.nodeId)
+          result = await this.planner.deleteForeshadowing(dto.nodeId);
         break;
       default:
         throw new BadRequestException(`不支持的大纲类型: ${dto.type}`);
@@ -396,11 +442,15 @@ export class AgentController {
 
   @Post('timeline-events')
   async createTimelineEvent(@Body() dto: CreateTimelineEventDto) {
-    return this.planner.createTimelineEvent(dto.bookId, {
-      title: dto.title,
-      description: dto.description,
-      order: dto.order,
-    }, dto.chapterId);
+    return this.planner.createTimelineEvent(
+      dto.bookId,
+      {
+        title: dto.title,
+        description: dto.description,
+        order: dto.order,
+      },
+      dto.chapterId,
+    );
   }
 
   @Delete('timeline-events/:id')
@@ -418,10 +468,14 @@ export class AgentController {
 
   @Post('foreshadowings')
   async createForeshadowing(@Body() dto: CreateForeshadowingDto) {
-    return this.planner.createForeshadowing(dto.bookId, {
-      title: dto.title,
-      content: dto.content,
-    }, dto.chapterId);
+    return this.planner.createForeshadowing(
+      dto.bookId,
+      {
+        title: dto.title,
+        content: dto.content,
+      },
+      dto.chapterId,
+    );
   }
 
   @Put('foreshadowings/:id/resolve')
@@ -430,7 +484,10 @@ export class AgentController {
   }
 
   @Put('foreshadowings/:id')
-  async updateForeshadowing(@Param('id') id: string, @Body() dto: { title?: string; content?: string }) {
+  async updateForeshadowing(
+    @Param('id') id: string,
+    @Body() dto: { title?: string; content?: string },
+  ) {
     return this.planner.updateForeshadowing(id, dto);
   }
 
@@ -512,7 +569,13 @@ export class AgentController {
 
   @Post('growth')
   async logGrowth(@Body() dto: LogGrowthDto) {
-    return this.character.logGrowth(dto.characterId, dto.chapterId, dto.beforeState, dto.afterState, dto.description);
+    return this.character.logGrowth(
+      dto.characterId,
+      dto.chapterId,
+      dto.beforeState,
+      dto.afterState,
+      dto.description,
+    );
   }
 
   // ==================== L1 场景管理 ====================
@@ -653,6 +716,12 @@ export class AgentController {
 
   @Post('events')
   async logEvent(@Body() dto: LogEventDto) {
-    return this.rag.logEvent(dto.bookId, dto.chapterId, dto.type, dto.description, dto.participants);
+    return this.rag.logEvent(
+      dto.bookId,
+      dto.chapterId,
+      dto.type,
+      dto.description,
+      dto.participants,
+    );
   }
 }

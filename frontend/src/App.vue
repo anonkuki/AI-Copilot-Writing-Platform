@@ -38,7 +38,7 @@ async function handleClose() { window.electronAPI?.close(); }
         <div class="w-5 h-5 rounded bg-brand flex items-center justify-center">
           <span class="text-white text-xs font-bold">A</span>
         </div>
-        <span class="text-xs text-text-secondary font-medium">AI+ 写作助手</span>
+        <span class="text-xs text-text-secondary font-medium">智文写作助手</span>
       </div>
       <div class="ml-auto flex items-center gap-1" style="-webkit-app-region: no-drag">
         <button @click="handleMinimize" class="w-8 h-6 flex items-center justify-center hover:bg-surface-hover rounded text-text-muted">

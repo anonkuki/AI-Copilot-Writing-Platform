@@ -183,7 +183,7 @@ export class PlannerService {
     return this.prisma.foreshadowing.findMany({
       where: {
         bookId,
-        status: status as any || undefined,
+        status: (status as any) || undefined,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import express from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 import compression = require('compression');
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
@@ -19,9 +20,11 @@ async function bootstrap() {
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
   // ==================== 安全 ====================
-  app.use(helmet({
-    contentSecurityPolicy: isProduction ? undefined : false,
-  }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction ? undefined : false,
+    }),
+  );
   app.use(compression());
 
   // ==================== Body Parser 限制 ====================
@@ -41,11 +44,10 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
   // ==================== CORS ====================
-  const corsOrigins =
-    configService.get<string>('CORS_ORIGIN')?.split(',') || [
-      'http://localhost:5173',
-      'http://localhost:5174',
-    ];
+  const corsOrigins = configService.get<string>('CORS_ORIGIN')?.split(',') || [
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
@@ -57,9 +59,7 @@ async function bootstrap() {
   if (!isProduction) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('AI+ 智能写作平台')
-      .setDescription(
-        '基于三层架构（大纲层 L3 → 角色层 L2 → 执行层 L1）的 AI 辅助网文写作系统 API',
-      )
+      .setDescription('基于三层架构（大纲层 L3 → 角色层 L2 → 执行层 L1）的 AI 辅助网文写作系统 API')
       .setVersion('1.0.0')
       .addBearerAuth()
       .addTag('ai', 'AI 写作代理 - 核心 Agent / 续写 / 一致性检查')

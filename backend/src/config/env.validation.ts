@@ -37,9 +37,14 @@ export function validateEnv(env: RawEnv) {
     THROTTLE_LIMIT: toPositiveInt(env.THROTTLE_LIMIT, 60, 'THROTTLE_LIMIT'),
     AI_THROTTLE_LIMIT: toPositiveInt(env.AI_THROTTLE_LIMIT, 15, 'AI_THROTTLE_LIMIT'),
     SILICONFLOW_API_KEY: env.SILICONFLOW_API_KEY,
-    SILICONFLOW_API_URL: env.SILICONFLOW_API_URL || 'https://api.siliconflow.cn/v1/chat/completions',
+    SILICONFLOW_API_URL:
+      env.SILICONFLOW_API_URL || 'https://api.siliconflow.cn/v1/chat/completions',
     SILICONFLOW_MODEL: env.SILICONFLOW_MODEL || 'deepseek-ai/DeepSeek-V3.2',
-    SILICONFLOW_TIMEOUT_MS: toPositiveInt(env.SILICONFLOW_TIMEOUT_MS, 30000, 'SILICONFLOW_TIMEOUT_MS'),
+    SILICONFLOW_TIMEOUT_MS: toPositiveInt(
+      env.SILICONFLOW_TIMEOUT_MS,
+      30000,
+      'SILICONFLOW_TIMEOUT_MS',
+    ),
     JWT_SECRET: env.JWT_SECRET,
     DATABASE_URL: env.DATABASE_URL,
     REDIS_URL: env.REDIS_URL,

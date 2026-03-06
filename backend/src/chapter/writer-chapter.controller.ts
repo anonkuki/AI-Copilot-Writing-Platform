@@ -1,17 +1,8 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChapterService } from './chapter.service';
 
-@Controller('chapter')
+@Controller('chapters')
 @UseGuards(JwtAuthGuard)
 export class WriterChapterController {
   constructor(private readonly chapterService: ChapterService) {}
@@ -39,17 +30,15 @@ export class WriterChapterController {
   }
 
   @Post('publish')
-  async publish(
-    @Body() body: { chapterId?: string; chapter_id?: string },
-    @Request() req: any,
-  ) {
+  async publish(@Body() body: { chapterId?: string; chapter_id?: string }, @Request() req: any) {
     const chapterId = body.chapterId || body.chapter_id;
     return this.chapterService.publish(chapterId || '', req.user.userId);
   }
 
   @Post('schedule')
   async schedule(
-    @Body() body: { chapterId?: string; chapter_id?: string; publishAt?: string; publish_at?: string },
+    @Body()
+    body: { chapterId?: string; chapter_id?: string; publishAt?: string; publish_at?: string },
     @Request() req: any,
   ) {
     const chapterId = body.chapterId || body.chapter_id;
@@ -59,7 +48,8 @@ export class WriterChapterController {
 
   @Post('rollback')
   async rollback(
-    @Body() body: {
+    @Body()
+    body: {
       chapterId?: string;
       chapter_id?: string;
       versionId?: string;
@@ -78,7 +68,12 @@ export class WriterChapterController {
     body: {
       bookId?: string;
       book_id?: string;
-      chapters: { id: string; order: number; volumeId?: string | null; volume_id?: string | null }[];
+      chapters: {
+        id: string;
+        order: number;
+        volumeId?: string | null;
+        volume_id?: string | null;
+      }[];
     },
     @Request() req: any,
   ) {

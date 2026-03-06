@@ -43,15 +43,17 @@ import {
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
+import { DocumentService } from '../document/document.service';
 
 /**
  * 房间用户接口
  * 用于记录加入文档房间的用户信息
  */
 interface RoomUser {
-  documentId: string;    // 文档 ID
-  userId: string;        // 用户/客户端 ID（Socket ID）
-  userName: string;     // 用户名称
+  documentId: string; // 文档 ID
+  userId: string; // 用户/客户端 ID（Socket ID）
+  userName: string; // 用户名称
+  realUserId: string; // JWT 中的真实用户 ID
 }
 
 /**
@@ -67,12 +69,13 @@ interface RoomUser {
   },
   namespace: '/documents',
 })
-export class DocumentGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class DocumentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private jwtSecret: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private documentService: DocumentService,
+  ) {
     this.jwtSecret = this.configService.get<string>('JWT_SECRET') || 'default-secret';
   }
 
@@ -107,8 +110,9 @@ export class DocumentGateway
     try {
       // 验证 JWT token
       const decoded = jwt.verify(token as string, this.jwtSecret) as any;
-      (client as any).user = decoded;
-      console.log(`🔌 Client connected: ${client.id}, user: ${decoded.userId}`);
+      // JWT 标准使用 sub 字段存储用户 ID
+      (client as any).user = { userId: decoded.sub, username: decoded.username };
+      console.log(`🔌 Client connected: ${client.id}, user: ${decoded.sub}`);
     } catch (error) {
       console.log(`🔌 Client ${client.id} disconnected: Invalid token`);
       client.disconnect();
@@ -152,13 +156,27 @@ export class DocumentGateway
    * @MessageBody() - 获取客户端发送的数据
    */
   @SubscribeMessage('join')
-  handleJoin(
+  async handleJoin(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { documentId: string; userName?: string },
   ) {
     const { documentId, userName = 'Anonymous' } = data;
-    // 房间名称格式：document:文档ID
     const roomName = `document:${documentId}`;
+
+    // ======= 文档级权限校验 =======
+    const user = (client as any).user;
+    if (!user?.userId) {
+      client.emit('error', { message: '未认证，无法加入房间' });
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    try {
+      // 验证用户对该文档的访问权限（findOne 内部会检查 ownership）
+      await this.documentService.findOne(documentId, user.userId);
+    } catch {
+      client.emit('error', { message: '无权限访问该文档' });
+      return { success: false, error: 'Forbidden' };
+    }
 
     // 让客户端加入房间
     client.join(roomName);
@@ -174,6 +192,7 @@ export class DocumentGateway
       userId: client.id,
       documentId: documentId,
       userName: userName,
+      realUserId: user.userId,
     });
 
     // 通知房间内其他人（有新用户加入）
@@ -203,10 +222,7 @@ export class DocumentGateway
    * 客户端发送 'leave' 消息时调用
    */
   @SubscribeMessage('leave')
-  handleLeave(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { documentId: string },
-  ) {
+  handleLeave(@ConnectedSocket() client: Socket, @MessageBody() data: { documentId: string }) {
     const { documentId } = data;
     const roomName = `document:${documentId}`;
 

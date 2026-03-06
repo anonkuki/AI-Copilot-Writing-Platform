@@ -131,10 +131,7 @@ describe('OrchestratorService', () => {
 
   describe('continueGeneration', () => {
     it('should use FIM when cursorPos is provided', async () => {
-      mockApiResponseSequence([
-        '插入的内容',
-        '{"issues": []}',
-      ]);
+      mockApiResponseSequence(['插入的内容', '{"issues": []}']);
 
       const request: AgentRequest = {
         bookId: 'book1',
@@ -200,8 +197,20 @@ describe('OrchestratorService', () => {
   describe('analyzeImpact', () => {
     it('should detect chapters affected by character deletion', async () => {
       mockPrisma.chapter.findMany.mockResolvedValue([
-        { id: 'ch1', title: '第一章', order: 1, content: '林渊走进了酒馆，推开了沉重的木门，坐在角落里', chapterSummary: null },
-        { id: 'ch2', title: '第二章', order: 2, content: '阳光明媚的一天，鸟儿在枝头歌唱，花朵绽放在道路两旁', chapterSummary: null },
+        {
+          id: 'ch1',
+          title: '第一章',
+          order: 1,
+          content: '林渊走进了酒馆，推开了沉重的木门，坐在角落里',
+          chapterSummary: null,
+        },
+        {
+          id: 'ch2',
+          title: '第二章',
+          order: 2,
+          content: '阳光明媚的一天，鸟儿在枝头歌唱，花朵绽放在道路两旁',
+          chapterSummary: null,
+        },
       ]);
 
       const result = await service.analyzeImpact('book1', {
@@ -228,13 +237,23 @@ describe('OrchestratorService', () => {
       });
 
       expect(result.affectedChapters).toHaveLength(2);
-      expect(result.affectedChapters.every(c => c.impact === 'MEDIUM')).toBe(true);
+      expect(result.affectedChapters.every((c) => c.impact === 'MEDIUM')).toBe(true);
     });
 
     it('should detect foreshadowing impact with HIGH for mentioned chapters', async () => {
       mockPrisma.chapter.findMany.mockResolvedValue([
-        { id: 'ch1', title: '第一章', order: 1, content: '他在古老的废墟中发现了神秘令牌，令牌散发着微弱的光芒' },
-        { id: 'ch2', title: '第二章', order: 2, content: '无关的内容占位，这只是普通的日常描写，没有特别的剧情' },
+        {
+          id: 'ch1',
+          title: '第一章',
+          order: 1,
+          content: '他在古老的废墟中发现了神秘令牌，令牌散发着微弱的光芒',
+        },
+        {
+          id: 'ch2',
+          title: '第二章',
+          order: 2,
+          content: '无关的内容占位，这只是普通的日常描写，没有特别的剧情',
+        },
       ]);
 
       const result = await service.analyzeImpact('book1', {
@@ -260,7 +279,7 @@ describe('OrchestratorService', () => {
       });
 
       // ch2 mentions 林渊 (HIGH), ch1 does not
-      const highImpact = result.affectedChapters.filter(c => c.impact === 'HIGH');
+      const highImpact = result.affectedChapters.filter((c) => c.impact === 'HIGH');
       if (highImpact.length > 0) {
         expect(result.affectedChapters[0].impact).toBe('HIGH');
       }
@@ -311,8 +330,13 @@ describe('OrchestratorService', () => {
       mockPrisma.agentSession.create.mockResolvedValue({ id: 'sess1' });
 
       const session = await (service as any).logSession(
-        'book1', 'ch1', AgentType.WRITER,
-        '{"command":"continue"}', '{"result":"ok"}', 'COMPLETED', 1234,
+        'book1',
+        'ch1',
+        AgentType.WRITER,
+        '{"command":"continue"}',
+        '{"result":"ok"}',
+        'COMPLETED',
+        1234,
       );
 
       expect(mockPrisma.agentSession.create).toHaveBeenCalledWith({
@@ -331,7 +355,13 @@ describe('OrchestratorService', () => {
 
       const longInput = 'X'.repeat(10000);
       await (service as any).logSession(
-        'book1', undefined, 'WRITER', longInput, longInput, 'COMPLETED', 0,
+        'book1',
+        undefined,
+        'WRITER',
+        longInput,
+        longInput,
+        'COMPLETED',
+        0,
       );
 
       const callData = mockPrisma.agentSession.create.mock.calls[0][0].data;
@@ -377,15 +407,13 @@ describe('OrchestratorService', () => {
     });
 
     it('should build consistency prompt with character settings', () => {
-      const prompt = (service as any).buildConsistencyPrompt(
-        'book1',
-        '待检查文本',
-        {
-          characters: [{ name: '林渊', profile: { strength: '剑术', weakness: '火', personality: '冷静' } }],
-          foreshadowings: [{ title: '伏笔1', content: '内容' }],
-          worldSettings: [{ genre: '玄幻', tone: '热血' }],
-        },
-      );
+      const prompt = (service as any).buildConsistencyPrompt('book1', '待检查文本', {
+        characters: [
+          { name: '林渊', profile: { strength: '剑术', weakness: '火', personality: '冷静' } },
+        ],
+        foreshadowings: [{ title: '伏笔1', content: '内容' }],
+        worldSettings: [{ genre: '玄幻', tone: '热血' }],
+      });
       expect(prompt).toContain('林渊');
       expect(prompt).toContain('剑术');
       expect(prompt).toContain('伏笔1');

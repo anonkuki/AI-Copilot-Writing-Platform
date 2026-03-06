@@ -1059,7 +1059,7 @@ export const useAgentStore = defineStore('agent', () => {
   }
 
   /** 回收伏笔 */
-  async function resolveForeshadowing(id: string, bookId: string) {
+  async function collectForeshadowing(id: string, bookId: string) {
     try {
       await axios.put(`${API_URL}/ai/foreshadowings/${id}/resolve`, {});
       await loadContext(bookId);
@@ -1825,6 +1825,7 @@ export const useAgentStore = defineStore('agent', () => {
     deleteForeshadowing,
     updateForeshadowing,
     resolveForeshadowing,
+    collectForeshadowing,
     abandonForeshadowing,
     updateCharacterProfile,
     createCharacter,

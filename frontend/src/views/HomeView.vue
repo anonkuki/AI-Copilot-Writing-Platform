@@ -104,28 +104,37 @@ function formatWordCount(count?: number | null) {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col min-h-0 overflow-hidden">
+  <div class="flex-1 flex flex-col min-h-0 overflow-hidden relative bg-surface-secondary">
+
     <!-- 顶部区域：欢迎 + 统计 -->
     <div class="bg-white border-b border-border">
-      <div class="max-w-content mx-auto px-6 py-5">
-        <div class="flex items-start justify-between">
+      <div class="max-w-content mx-auto px-6 py-6">
+        <div class="flex items-center justify-between">
           <!-- 欢迎横幅 -->
-          <div class="flex-1">
-            <div class="bg-gradient-to-r from-brand-50 to-blue-50 rounded-xl p-6 relative overflow-hidden">
-              <div class="relative z-10">
-                <p class="text-text-secondary text-sm">欢迎使用 AI+ 智能写作助手</p>
-                <h1 class="text-xl font-bold text-text-primary mt-1">与世界分享你的故事</h1>
+          <div class="flex-1 relative">
+            <div class="bg-gradient-to-r from-brand-50 via-blue-50 to-white rounded-2xl p-6 relative overflow-hidden shadow-sm border border-brand/10">
+              <div class="relative z-10 flex items-center gap-5">
+                <div class="w-16 h-16 rounded-2xl bg-brand border-2 border-white shadow-md flex items-center justify-center p-3 shrink-0 ring-1 ring-brand/10">
+                  <img src="/logo.png" alt="智文写作助手" class="w-full h-full object-contain filter brightness-0 invert" />
+                </div>
+                <div>
+                  <h1 class="text-2xl font-bold text-text-primary tracking-tight">与世界分享你的故事</h1>
+                  <p class="text-brand-600/80 text-sm mt-1.5 font-medium flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand"></span>
+                    欢迎使用智文写作助手，让灵感即刻成文
+                  </p>
+                </div>
               </div>
-              <div class="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
-                <svg class="w-24 h-24 text-brand" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
+              
+              <!-- 装饰背景 Logo -->
+              <div class="absolute right-0 top-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none transform translate-x-1/4 scale-150">
+                <img src="/logo.png" alt="" class="w-64 h-64 object-contain filter grayscale" />
               </div>
             </div>
           </div>
 
           <!-- 统计卡片 -->
-          <div v-if="bookStore.stats && bookStore.writingStats" class="ml-6 flex gap-4 shrink-0">
+          <div v-if="bookStore.stats && bookStore.writingStats" class="ml-8 flex gap-4 shrink-0">
             <div class="bg-surface-secondary rounded-xl px-5 py-4 text-center min-w-[100px]">
               <div class="text-2xl font-bold text-brand">{{ bookStore.stats.totalBooks }}</div>
               <div class="text-xs text-text-muted mt-1">作品总数</div>

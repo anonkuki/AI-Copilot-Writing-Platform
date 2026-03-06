@@ -104,26 +104,41 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private httpStatusToErrorCode(status: number): number {
     switch (status) {
-      case 400: return ERROR_CODES.INVALID_PARAMETER.code;
-      case 401: return ERROR_CODES.UNAUTHORIZED.code;
-      case 403: return ERROR_CODES.FORBIDDEN.code;
-      case 404: return ERROR_CODES.NOT_FOUND.code;
-      case 429: return ERROR_CODES.RATE_LIMIT_EXCEEDED.code;
-      default: return ERROR_CODES.INTERNAL_ERROR.code;
+      case 400:
+        return ERROR_CODES.INVALID_PARAMETER.code;
+      case 401:
+        return ERROR_CODES.UNAUTHORIZED.code;
+      case 403:
+        return ERROR_CODES.FORBIDDEN.code;
+      case 404:
+        return ERROR_CODES.NOT_FOUND.code;
+      case 429:
+        return ERROR_CODES.RATE_LIMIT_EXCEEDED.code;
+      default:
+        return ERROR_CODES.INTERNAL_ERROR.code;
     }
   }
 
   private httpStatusToErrorText(status: number): string {
     switch (status) {
-      case 400: return 'Bad Request';
-      case 401: return 'Unauthorized';
-      case 403: return 'Forbidden';
-      case 404: return 'Not Found';
-      case 409: return 'Conflict';
-      case 422: return 'Unprocessable Entity';
-      case 429: return 'Too Many Requests';
-      case 504: return 'Gateway Timeout';
-      default: return 'Internal Server Error';
+      case 400:
+        return 'Bad Request';
+      case 401:
+        return 'Unauthorized';
+      case 403:
+        return 'Forbidden';
+      case 404:
+        return 'Not Found';
+      case 409:
+        return 'Conflict';
+      case 422:
+        return 'Unprocessable Entity';
+      case 429:
+        return 'Too Many Requests';
+      case 504:
+        return 'Gateway Timeout';
+      default:
+        return 'Internal Server Error';
     }
   }
 }

@@ -38,10 +38,7 @@ describe('CharacterService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CharacterService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [CharacterService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<CharacterService>(CharacterService);
@@ -63,7 +60,7 @@ describe('CharacterService', () => {
 
       const result = await service.getCharacterProfile('c1');
       expect(result).toEqual(profile);
-      expect(result.personality).toBe('冷静、理性');
+      expect(result!.personality).toBe('冷静、理性');
     });
 
     it('should upsert character profile - create new', async () => {
@@ -73,7 +70,9 @@ describe('CharacterService', () => {
         currentGoal: '成为剑圣',
       };
       mockPrisma.characterProfile.upsert.mockResolvedValue({
-        id: 'p1', characterId: 'c1', ...input,
+        id: 'p1',
+        characterId: 'c1',
+        ...input,
       });
 
       const result = await service.upsertCharacterProfile('c1', input);
@@ -82,10 +81,13 @@ describe('CharacterService', () => {
 
     it('should update character state', async () => {
       mockPrisma.characterProfile.findUnique.mockResolvedValue({
-        id: 'p1', characterId: 'c1', currentGoal: '旧目标',
+        id: 'p1',
+        characterId: 'c1',
+        currentGoal: '旧目标',
       });
       mockPrisma.characterProfile.update.mockResolvedValue({
-        id: 'p1', currentGoal: '新目标',
+        id: 'p1',
+        currentGoal: '新目标',
       });
 
       const result = await service.updateCharacterState('c1', '新目标');
@@ -95,7 +97,9 @@ describe('CharacterService', () => {
     it('should create profile if not exists when updating state', async () => {
       mockPrisma.characterProfile.findUnique.mockResolvedValue(null);
       mockPrisma.characterProfile.create.mockResolvedValue({
-        id: 'p1', characterId: 'c1', currentGoal: '目标',
+        id: 'p1',
+        characterId: 'c1',
+        currentGoal: '目标',
       });
 
       const result = await service.updateCharacterState('c1', '目标');
@@ -109,8 +113,13 @@ describe('CharacterService', () => {
     it('should get all relationships for a book with character info', async () => {
       mockPrisma.characterRelationship.findMany.mockResolvedValue([
         {
-          id: 'r1', fromId: 'c1', toId: 'c2', type: '师徒', status: 'POSITIVE',
-          fromChar: { name: '林渊' }, toChar: { name: '张三' },
+          id: 'r1',
+          fromId: 'c1',
+          toId: 'c2',
+          type: '师徒',
+          status: 'POSITIVE',
+          fromChar: { name: '林渊' },
+          toChar: { name: '张三' },
         },
       ]);
 
@@ -121,11 +130,18 @@ describe('CharacterService', () => {
 
     it('should create a character relationship', async () => {
       mockPrisma.characterRelationship.create.mockResolvedValue({
-        id: 'r1', bookId: 'book1', fromId: 'c1', toId: 'c2', type: '对手', status: 'NEGATIVE',
+        id: 'r1',
+        bookId: 'book1',
+        fromId: 'c1',
+        toId: 'c2',
+        type: '对手',
+        status: 'NEGATIVE',
       });
 
       const result = await service.createCharacterRelationship('book1', 'c1', {
-        toId: 'c2', type: '对手', status: 'NEGATIVE',
+        toId: 'c2',
+        type: '对手',
+        status: 'NEGATIVE',
       });
       expect(result.type).toBe('对手');
       expect(result.status).toBe('NEGATIVE');
@@ -137,7 +153,8 @@ describe('CharacterService', () => {
       );
 
       const result = await service.createCharacterRelationship('book1', 'c1', {
-        toId: 'c2', type: '同窗',
+        toId: 'c2',
+        type: '同窗',
       });
       expect(result.status).toBe('NEUTRAL');
     });
@@ -176,7 +193,9 @@ describe('CharacterService', () => {
       );
 
       const result = await service.logEmotion('c1', 'ch1', {
-        emotion: '怒', intensity: 9, trigger: '被背叛',
+        emotion: '怒',
+        intensity: 9,
+        trigger: '被背叛',
       });
       expect(result.intensity).toBe(9);
       expect(result.trigger).toBe('被背叛');
@@ -192,7 +211,11 @@ describe('CharacterService', () => {
       );
 
       const result = await service.logGrowth(
-        'c1', 'ch5', '初入门派的菜鸟', '掌握基本剑法', '在比武中获胜',
+        'c1',
+        'ch5',
+        '初入门派的菜鸟',
+        '掌握基本剑法',
+        '在比武中获胜',
       );
       expect(result.beforeState).toBe('初入门派的菜鸟');
       expect(result.afterState).toBe('掌握基本剑法');
@@ -205,7 +228,9 @@ describe('CharacterService', () => {
     it('should return characters with all relations', async () => {
       mockPrisma.character.findMany.mockResolvedValue([
         {
-          id: 'c1', name: '林渊', role: '主角',
+          id: 'c1',
+          name: '林渊',
+          role: '主角',
           profile: { personality: '冷静' },
           fromRels: [{ toChar: { name: '张三' } }],
           toRels: [],
@@ -215,7 +240,7 @@ describe('CharacterService', () => {
 
       const result = await service.getFullCharacters('book1');
       expect(result).toHaveLength(1);
-      expect(result[0].profile.personality).toBe('冷静');
+      expect((result as any[])[0].profile.personality).toBe('冷静');
     });
   });
 
@@ -224,7 +249,8 @@ describe('CharacterService', () => {
   describe('ConflictCheck', () => {
     it('should detect weakness conflict', async () => {
       mockPrisma.characterProfile.findUnique.mockResolvedValue({
-        id: 'p1', weakness: '恐高',
+        id: 'p1',
+        weakness: '恐高',
       });
 
       const result = await service.checkCharacterConflict('c1', '在高空中恐高跳跃');
@@ -233,7 +259,8 @@ describe('CharacterService', () => {
 
     it('should return no warnings if no conflict', async () => {
       mockPrisma.characterProfile.findUnique.mockResolvedValue({
-        id: 'p1', weakness: '恐高',
+        id: 'p1',
+        weakness: '恐高',
       });
 
       const result = await service.checkCharacterConflict('c1', '在地面行走');

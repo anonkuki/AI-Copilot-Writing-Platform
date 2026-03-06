@@ -58,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email: string, password: string) {
-    const payload = await apiPost<AuthResponse>('/login', { email, password });
+    const payload = await apiPost<AuthResponse>('/auth/login', { email, password });
     const parsed = parseAuthPayload(payload);
     if (!parsed.token || !parsed.user) {
       throw new Error('登录返回数据不完整');
@@ -68,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(email: string, password: string, name?: string) {
-    const payload = await apiPost<AuthResponse>('/register', { email, password, name });
+    const payload = await apiPost<AuthResponse>('/auth/register', { email, password, name });
     const parsed = parseAuthPayload(payload);
     if (!parsed.token || !parsed.user) {
       throw new Error('注册返回数据不完整');

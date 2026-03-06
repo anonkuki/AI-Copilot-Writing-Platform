@@ -19,7 +19,12 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AiAskDto, AiSuggestDto } from './dto/ai-ask.dto';
-import { AiWriteDto, AiEditTextDto, AiGenerateOutlineDto, AiCharacterDto } from './dto/ai-write.dto';
+import {
+  AiWriteDto,
+  AiEditTextDto,
+  AiGenerateOutlineDto,
+  AiCharacterDto,
+} from './dto/ai-write.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 /**
@@ -106,13 +111,7 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async edit(@Body() dto: AiEditTextDto, @Request() req: any) {
-    return this.aiService.editText(
-      req.user.userId,
-      dto.bookId,
-      dto.text,
-      dto.action,
-      dto.style,
-    );
+    return this.aiService.editText(req.user.userId, dto.bookId, dto.text, dto.action, dto.style);
   }
 
   /**

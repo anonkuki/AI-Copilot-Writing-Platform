@@ -11,7 +11,17 @@ export class AiWriteDto {
   @IsString()
   content: string;
 
-  @IsEnum(['generate', 'continue', 'improve', 'expand', 'summarize', 'edit', 'outline', 'character', 'plot'])
+  @IsEnum([
+    'generate',
+    'continue',
+    'improve',
+    'expand',
+    'summarize',
+    'edit',
+    'outline',
+    'character',
+    'plot',
+  ])
   command: string;
 
   @IsOptional()

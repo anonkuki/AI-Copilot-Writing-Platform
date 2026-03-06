@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBookStore, type Chapter, type ChapterVersion } from '@/stores/book';
 import { useAgentStore, type PolishSuggestion } from '@/stores/agent';
+import { useAuthStore } from '@/stores/auth';
+import { useSocket } from '@/composables/useSocket';
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -10,13 +12,29 @@ import Highlight from '@tiptap/extension-highlight';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import ThreeLayerPanel from '@/components/ThreeLayerPanel.vue';
-import { InlinePolishExtension, polishPluginKey, buildPolishDecorations, findTextInDoc, type PolishDecorationItem } from '@/components/InlinePolishPlugin';
+import {
+  InlinePolishExtension,
+  polishPluginKey,
+  buildPolishDecorations,
+  findTextInDoc,
+  type PolishDecorationItem,
+} from '@/components/InlinePolishPlugin';
 import { textToHtml } from '@/lib/textToHtml';
 
 const route = useRoute();
 const router = useRouter();
 const bookStore = useBookStore();
 const agentStore = useAgentStore();
+const authStore = useAuthStore();
+const {
+  connect: socketConnect,
+  disconnect: socketDisconnect,
+  joinDocument,
+  leaveDocument,
+  emitContentUpdate,
+  onContentUpdate,
+  isConnected: socketConnected,
+} = useSocket();
 
 const bookId = computed(() => route.params.id as string);
 const currentChapter = ref<Chapter | null>(null);
@@ -364,6 +382,25 @@ function handlePolishKeydown(e: KeyboardEvent) {
 
 onMounted(async () => {
   document.addEventListener('keydown', handlePolishKeydown);
+
+  // ====== WebSocket 实时协作初始化 ======
+  if (authStore.isLoggedIn) {
+    socketConnect();
+    // 注册远程内容更新回调
+    onContentUpdate((data) => {
+      if (!currentChapter.value) return;
+      console.log('📥 收到远程内容更新:', data.userName);
+      isRemoteUpdate.value = true;
+      editorContent.value = data.content;
+      if (editor.value) {
+        editor.value.commands.setContent(data.content);
+      }
+      nextTick(() => {
+        isRemoteUpdate.value = false;
+      });
+    });
+  }
+
   await loadBook();
 });
 onUnmounted(() => {
@@ -371,14 +408,29 @@ onUnmounted(() => {
   if (polishMode.value) stopInlinePolish();
   if (saveTimer) clearTimeout(saveTimer);
   editor.value?.destroy();
+
+  // ====== WebSocket 清理 ======
+  if (currentChapter.value) {
+    leaveDocument(currentChapter.value.id);
+  }
+  onContentUpdate(null); // 清除回调
 });
 
-watch(bookId, async () => { await loadBook(); });
+watch(bookId, async () => {
+  await loadBook();
+});
 watch([chapterTitle, editorContent], () => {
   if (isHydrating.value || isRemoteUpdate.value || !currentChapter.value) return;
   dirty.value = true;
   saveStatusText.value = '本地实时保存中';
   scheduleSave();
+
+  // ====== WebSocket: 实时同步内容给其他协作者 ======
+  if (socketConnected.value && currentChapter.value) {
+    const userName = authStore.user?.name || authStore.user?.email || 'Anonymous';
+    // 使用时间戳作为简易版本号
+    emitContentUpdate(currentChapter.value.id, editorContent.value, Date.now(), userName);
+  }
 });
 
 // ==== Methods ====
@@ -407,7 +459,16 @@ async function selectChapter(chapter: Chapter) {
   // 润色模式下切换章节，先清理
   if (polishMode.value) stopInlinePolish();
   // 清除残留的保存定时器，防止竞态覆写
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+
+  // ====== WebSocket: 离开旧房间 ======
+  if (currentChapter.value && socketConnected.value) {
+    leaveDocument(currentChapter.value.id);
+  }
+
   isHydrating.value = true;
   try {
     const latest = await bookStore.fetchChapter(chapter.id);
@@ -422,6 +483,12 @@ async function selectChapter(chapter: Chapter) {
     }
     dirty.value = false;
     saveStatusText.value = '已保存';
+
+    // ====== WebSocket: 加入新房间 ======
+    if (socketConnected.value) {
+      const userName = authStore.user?.name || authStore.user?.email || 'Anonymous';
+      joinDocument(latest.id, userName);
+    }
   } finally {
     isHydrating.value = false;
   }

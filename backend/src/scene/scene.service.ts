@@ -99,12 +99,13 @@ export class SceneService {
    */
   async autoSplitScenes(chapterId: string, content: string): Promise<any[]> {
     // 按常见场景分隔符拆分
-    const separators = /(?:\n\s*\*{3,}\s*\n|\n\s*-{3,}\s*\n|\n\s*={3,}\s*\n|【场景[\d一二三四五六七八九十]*】)/;
-    const parts = content.split(separators).filter(p => p.trim().length > 0);
+    const separators =
+      /(?:\n\s*\*{3,}\s*\n|\n\s*-{3,}\s*\n|\n\s*={3,}\s*\n|【场景[\d一二三四五六七八九十]*】)/;
+    const parts = content.split(separators).filter((p) => p.trim().length > 0);
 
     if (parts.length <= 1) {
       // 如果没有明显分隔符，按大段落拆分（连续两个换行）
-      const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+      const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
       // 每3段合并为一个场景
       const scenes: string[] = [];
       for (let i = 0; i < paragraphs.length; i += 3) {

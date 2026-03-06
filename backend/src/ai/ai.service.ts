@@ -73,7 +73,8 @@ export class AiService {
 
     try {
       const suggestion = await this.requestCompletion({
-        systemPrompt: '你是一个AI写作助手。根据文档上下文和用户操作，生成适当的内容建议。请用中文回复，简洁实用。',
+        systemPrompt:
+          '你是一个AI写作助手。根据文档上下文和用户操作，生成适当的内容建议。请用中文回复，简洁实用。',
         prompt,
         temperature: 0.8,
         maxTokens: 500,
@@ -129,7 +130,11 @@ export class AiService {
     return prompt;
   }
 
-  private buildSuggestPrompt(documentContent: string, selectedText: string, command?: string): string {
+  private buildSuggestPrompt(
+    documentContent: string,
+    selectedText: string,
+    command?: string,
+  ): string {
     const context = this.buildContext(documentContent);
 
     let prompt = `Document so far:\n${context.substring(0, 1500)}\n\n`;
@@ -173,26 +178,26 @@ export class AiService {
   private getMockResponse(question: string, selectedText?: string): any {
     const responses: Record<string, string> = {
       default: '我理解您的问题。根据文档内容，我建议您可以进一步完善当前的段落，使表达更加清晰。',
-      'grammar': '语法检查完成。选中的文本没有明显的语法错误，但可以考虑使用更简洁的表达方式。',
-      'improve': '建议将长句拆分为短句，并使用更具描述性的词汇来增强可读性。',
+      grammar: '语法检查完成。选中的文本没有明显的语法错误，但可以考虑使用更简洁的表达方式。',
+      improve: '建议将长句拆分为短句，并使用更具描述性的词汇来增强可读性。',
     };
 
-    const key = question.toLowerCase().includes('语法') ? 'grammar' :
-                question.toLowerCase().includes('改进') ? 'improve' : 'default';
+    const key = question.toLowerCase().includes('语法')
+      ? 'grammar'
+      : question.toLowerCase().includes('改进')
+        ? 'improve'
+        : 'default';
 
     return {
       answer: responses[key],
-      suggestions: [
-        '添加更多细节描述',
-        '使用更具体的例子',
-        '简化复杂句子',
-      ],
+      suggestions: ['添加更多细节描述', '使用更具体的例子', '简化复杂句子'],
     };
   }
 
   private getMockSuggestion(command?: string): any {
     const suggestions: Record<string, string> = {
-      continue: '基于当前文档内容，您可以继续阐述下一个要点，或者添加一个实际应用场景来增强说服力。',
+      continue:
+        '基于当前文档内容，您可以继续阐述下一个要点，或者添加一个实际应用场景来增强说服力。',
       improve: '建议使用更生动的描述性语言，并适当加入数据或案例来支撑观点。',
       fix: '已检查并修正了语法错误。现在句子更加清晰流畅。',
       summarize: '本文档主要讨论了核心主题，涵盖了主要观点和关键细节。',
@@ -559,7 +564,8 @@ export class AiService {
       prompt += `，角色类型：${role}`;
     }
 
-    prompt += '。请包含以下内容：\n1. 角色基本信息（姓名、年龄、外貌）\n2. 性格特点\n3. 背景故事\n4. 在故事中的作用\n5. 与其他角色的关系';
+    prompt +=
+      '。请包含以下内容：\n1. 角色基本信息（姓名、年龄、外貌）\n2. 性格特点\n3. 背景故事\n4. 在故事中的作用\n5. 与其他角色的关系';
 
     if (description) {
       prompt += `\n\n参考设定：\n${description}`;

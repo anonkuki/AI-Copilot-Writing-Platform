@@ -25,10 +25,7 @@ describe('SceneService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SceneService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [SceneService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<SceneService>(SceneService);
@@ -55,7 +52,10 @@ describe('SceneService', () => {
 
     it('should get a single scene', async () => {
       mockPrisma.scene.findUnique.mockResolvedValue({
-        id: 's1', title: '酒馆相遇', location: '酒馆', timeOfDay: '夜晚',
+        id: 's1',
+        title: '酒馆相遇',
+        location: '酒馆',
+        timeOfDay: '夜晚',
       });
 
       const result = await service.getScene('s1');
@@ -97,7 +97,9 @@ describe('SceneService', () => {
 
     it('should update a scene', async () => {
       mockPrisma.scene.update.mockResolvedValue({
-        id: 's1', title: '新标题', content: '新内容',
+        id: 's1',
+        title: '新标题',
+        content: '新内容',
       });
 
       const result = await service.updateScene('s1', { title: '新标题' });

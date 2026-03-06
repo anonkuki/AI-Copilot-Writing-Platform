@@ -46,9 +46,7 @@ export class StatsService {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const stat = recentStats.find(
-        (s) => s.date.toISOString().split('T')[0] === dateStr,
-      );
+      const stat = recentStats.find((s) => s.date.toISOString().split('T')[0] === dateStr);
       recentDays.push({
         date: dateStr,
         wordCount: stat?.wordCount || 0,

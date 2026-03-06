@@ -3,7 +3,7 @@
 本项目是一个前后端分离的 AI 写作助手应用，包含：
 - **前端**: Vue 3 + Vite + TailwindCSS
 - **后端**: NestJS + Prisma + Socket.io
-- **数据库**: PostgreSQL
+- **数据库**: 开发环境默认使用 SQLite（零配置），生产部署推荐 PostgreSQL
 - **缓存**: Redis (可选)
 
 ---
@@ -11,6 +11,9 @@
 ## 快速部署 (免费层)
 
 ### 1. 数据库 - Neon (免费 PostgreSQL)
+
+> **注意**：本地开发默认使用 SQLite（见 `prisma/schema.prisma`），无需额外数据库服务。
+> 线上部署时需要将 schema 中 `provider` 改为 `"postgresql"` 并配置连接串。
 
 1. 访问 https://neon.tech 注册账号
 2. 创建新项目，选择免费套餐

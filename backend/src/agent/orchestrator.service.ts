@@ -25,9 +25,9 @@ export interface AgentRequest {
   chapterId?: string;
   content?: string;
   command?: string;
-  cursorPos?: number;        // 光标位置（用于 Fill-in-the-Middle）
+  cursorPos?: number; // 光标位置（用于 Fill-in-the-Middle）
   userInstructions?: string; // 用户附加指令
-  candidateCount?: number;   // 候选数量（默认3）
+  candidateCount?: number; // 候选数量（默认3）
   context?: {
     selectedText?: string;
     mode?: 'continue' | 'improve' | 'expand' | 'summarize' | 'generate';
@@ -40,28 +40,30 @@ export interface AgentRequest {
 export interface AgentResponse {
   type: AgentType;
   result: string;
-  candidates?: string[];      // 多候选文本
+  candidates?: string[]; // 多候选文本
   diff?: {
     original: string;
     replacement: string;
   };
   suggestions?: string[];
   warnings?: string[];
-  diagnostics?: Array<{       // 一致性诊断
+  diagnostics?: Array<{
+    // 一致性诊断
     type: string;
     severity: string;
     description: string;
     suggestion?: string;
   }>;
-  suggestedChanges?: Array<{  // 建议修改
+  suggestedChanges?: Array<{
+    // 建议修改
     location: string;
     original: string;
     replacement: string;
     reason: string;
   }>;
-  sessionId?: string;         // Agent 会话 ID
+  sessionId?: string; // Agent 会话 ID
   status: 'success' | 'failed';
-  duration?: number;           // 耗时(ms)
+  duration?: number; // 耗时(ms)
 }
 
 /**
@@ -163,7 +165,7 @@ export class OrchestratorService {
     private consistencyService: ConsistencyService,
     private configService: ConfigService,
   ) {
-    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY');
+    this.apiKey = this.configService.get<string>('SILICONFLOW_API_KEY') ?? '';
   }
 
   /**
@@ -184,7 +186,7 @@ export class OrchestratorService {
       const context = await this.loadContext(bookId, chapterId);
 
       // 3. 合并 RAG 结果到上下文
-      context.ragContext = ragResults.map(r => `[${r.type}] ${r.content}`).join('\n');
+      context.ragContext = ragResults.map((r) => `[${r.type}] ${r.content}`).join('\n');
 
       // 4. 根据命令类型选择 Agent 流程
       let result: AgentResponse;
@@ -210,10 +212,13 @@ export class OrchestratorService {
       result.duration = duration;
 
       const session = await this.logSession(
-        bookId, chapterId, result.type,
+        bookId,
+        chapterId,
+        result.type,
         JSON.stringify({ command, content: content?.slice(0, 500) }),
         JSON.stringify({ result: result.result?.slice(0, 500), warnings: result.warnings }),
-        'COMPLETED', duration,
+        'COMPLETED',
+        duration,
       );
       result.sessionId = session.id;
 
@@ -221,9 +226,13 @@ export class OrchestratorService {
     } catch (error: any) {
       const duration = Date.now() - startTime;
       await this.logSession(
-        bookId, chapterId, AgentType.WRITER,
+        bookId,
+        chapterId,
+        AgentType.WRITER,
         JSON.stringify({ command, error: error.message }),
-        '', 'FAILED', duration,
+        '',
+        'FAILED',
+        duration,
       );
       throw error;
     }
@@ -292,11 +301,14 @@ export class OrchestratorService {
   /**
    * 大纲变更影响分析
    */
-  async analyzeImpact(bookId: string, changes: {
-    type: 'world_setting' | 'plot_line' | 'character' | 'foreshadowing';
-    action: 'create' | 'update' | 'delete';
-    data: any;
-  }): Promise<ImpactAnalysis> {
+  async analyzeImpact(
+    bookId: string,
+    changes: {
+      type: 'world_setting' | 'plot_line' | 'character' | 'foreshadowing';
+      action: 'create' | 'update' | 'delete';
+      data: any;
+    },
+  ): Promise<ImpactAnalysis> {
     // 获取所有章节
     const chapters = await this.prisma.chapter.findMany({
       where: { bookId },
@@ -367,8 +379,8 @@ export class OrchestratorService {
     return {
       affectedChapters,
       suggestedPriority: affectedChapters
-        .filter(c => c.impact === 'HIGH')
-        .map(c => c.chapterId),
+        .filter((c) => c.impact === 'HIGH')
+        .map((c) => c.chapterId),
     };
   }
 
@@ -408,10 +420,13 @@ export class OrchestratorService {
     const plan = this.parseCreativePlan(result.result, chapterCount);
 
     await this.logSession(
-      bookId, undefined, 'CREATIVE_PLAN',
+      bookId,
+      undefined,
+      'CREATIVE_PLAN',
       JSON.stringify({ userPrompt, chapterCount }),
       JSON.stringify(plan),
-      'COMPLETED', Date.now() - startTime,
+      'COMPLETED',
+      Date.now() - startTime,
     );
 
     return plan;
@@ -474,7 +489,10 @@ export class OrchestratorService {
         try {
           const pl = await this.plannerService.createPlotLine(bookId, {
             title: plan.plotLines[i].title,
-            description: plan.plotLines[i].description + '\n关键事件: ' + plan.plotLines[i].keyEvents.join(', '),
+            description:
+              plan.plotLines[i].description +
+              '\n关键事件: ' +
+              plan.plotLines[i].keyEvents.join(', '),
             type: plan.plotLines[i].type as any,
           });
           result.plotLineIds.push(pl.id);
@@ -503,9 +521,8 @@ export class OrchestratorService {
         where: { bookId },
         orderBy: { order: 'asc' },
       });
-      const nextOrder = existingChapters.length > 0
-        ? Math.max(...existingChapters.map(c => c.order)) + 1
-        : 1;
+      const nextOrder =
+        existingChapters.length > 0 ? Math.max(...existingChapters.map((c) => c.order)) + 1 : 1;
 
       // 加载新创建的上下文
       const context = await this.loadContext(bookId);
@@ -544,29 +561,38 @@ export class OrchestratorService {
             title: outline.title,
             wordCount: (genResult.result || '').length,
           });
-          this.logger.log(`[CreativePlan] 章节已生成: ${outline.title} (${(genResult.result || '').length}字)`);
+          this.logger.log(
+            `[CreativePlan] 章节已生成: ${outline.title} (${(genResult.result || '').length}字)`,
+          );
 
           // 更新 context 用于后续章节（保持前情连贯）
-          context.chapterSummary = (context.chapterSummary || '') + `\n第${i + 1}章 ${outline.title}: ${outline.summary}`;
+          context.chapterSummary =
+            (context.chapterSummary || '') + `\n第${i + 1}章 ${outline.title}: ${outline.summary}`;
         } catch (err: any) {
           this.logger.warn(`[CreativePlan] 章节生成失败 ${outline.title}: ${err.message}`);
         }
       }
 
       await this.logSession(
-        bookId, undefined, 'CREATIVE_PLAN_EXEC',
+        bookId,
+        undefined,
+        'CREATIVE_PLAN_EXEC',
         JSON.stringify({ plan: plan.title }),
         JSON.stringify(result),
-        'COMPLETED', Date.now() - startTime,
+        'COMPLETED',
+        Date.now() - startTime,
       );
 
       return result;
     } catch (error: any) {
       await this.logSession(
-        bookId, undefined, 'CREATIVE_PLAN_EXEC',
+        bookId,
+        undefined,
+        'CREATIVE_PLAN_EXEC',
         JSON.stringify({ plan: plan.title }),
         JSON.stringify({ error: error.message }),
-        'FAILED', Date.now() - startTime,
+        'FAILED',
+        Date.now() - startTime,
       );
       throw error;
     }
@@ -593,51 +619,60 @@ export class OrchestratorService {
       select: { id: true, title: true, order: true, wordCount: true, status: true },
     });
     const chaptersOverview = allChapters.length
-      ? allChapters.map((c: any) =>
-          `${c.order}. ${c.title} (${c.wordCount}字${c.id === chapterId ? ' ← 当前编辑' : ''})`
-        ).join('\n')
+      ? allChapters
+          .map(
+            (c: any) =>
+              `${c.order}. ${c.title} (${c.wordCount}字${c.id === chapterId ? ' ← 当前编辑' : ''})`,
+          )
+          .join('\n')
       : '尚无章节';
 
     // == 构建角色（含详细信息） ==
-    const characterDetails = (context.characters || []).map((c: any) => {
-      const profile = c.profile;
-      const parts = [`「${c.name}」(${c.role || 'supporting'})`];
-      if (profile?.personality) parts.push(`性格: ${profile.personality}`);
-      if (profile?.currentGoal) parts.push(`目标: ${profile.currentGoal}`);
-      return parts.join(' | ');
-    }).join('\n') || '尚无角色';
+    const characterDetails =
+      (context.characters || [])
+        .map((c: any) => {
+          const profile = c.profile;
+          const parts = [`「${c.name}」(${c.role || 'supporting'})`];
+          if (profile?.personality) parts.push(`性格: ${profile.personality}`);
+          if (profile?.currentGoal) parts.push(`目标: ${profile.currentGoal}`);
+          return parts.join(' | ');
+        })
+        .join('\n') || '尚无角色';
 
     // == 当前编辑内容摘要 ==
     const contentSnippet = currentContent
-      ? (currentContent.length > 800
-          ? `...${currentContent.slice(-800)}`
-          : currentContent)
+      ? currentContent.length > 800
+        ? `...${currentContent.slice(-800)}`
+        : currentContent
       : '';
 
-    const currentChapter = chapterId
-      ? allChapters.find((c: any) => c.id === chapterId)
-      : null;
+    const currentChapter = chapterId ? allChapters.find((c: any) => c.id === chapterId) : null;
 
     // == 世界观详情 ==
-    const worldDetail = (context.worldSettings || []).map((ws: any) => {
-      const parts: string[] = [];
-      if (ws.genre) parts.push(`类型: ${ws.genre}`);
-      if (ws.theme) parts.push(`主题: ${ws.theme}`);
-      if (ws.tone) parts.push(`基调: ${ws.tone}`);
-      if (ws.timePeriod) parts.push(`时代: ${ws.timePeriod}`);
-      if (ws.location) parts.push(`地点: ${ws.location}`);
-      return parts.join(' | ');
-    }).join('; ') || '未设定';
+    const worldDetail =
+      (context.worldSettings || [])
+        .map((ws: any) => {
+          const parts: string[] = [];
+          if (ws.genre) parts.push(`类型: ${ws.genre}`);
+          if (ws.theme) parts.push(`主题: ${ws.theme}`);
+          if (ws.tone) parts.push(`基调: ${ws.tone}`);
+          if (ws.timePeriod) parts.push(`时代: ${ws.timePeriod}`);
+          if (ws.location) parts.push(`地点: ${ws.location}`);
+          return parts.join(' | ');
+        })
+        .join('; ') || '未设定';
 
     // == 伏笔详情 ==
-    const foreshadowingDetail = (context.foreshadowings || []).map((f: any) =>
-      `「${f.title}」: ${(f.content || '').slice(0, 60)}`
-    ).join('\n') || '无';
+    const foreshadowingDetail =
+      (context.foreshadowings || [])
+        .map((f: any) => `「${f.title}」: ${(f.content || '').slice(0, 60)}`)
+        .join('\n') || '无';
 
     // == 剧情线详情 ==
-    const plotlineDetail = (context.plotLines || []).map((pl: any) =>
-      `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 80)}`
-    ).join('\n') || '无';
+    const plotlineDetail =
+      (context.plotLines || [])
+        .map((pl: any) => `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 80)}`)
+        .join('\n') || '无';
 
     const systemPrompt = `你是一个专业的AI小说创作助手。你不仅提供分析和建议，更要**主动执行操作**帮助用户完成创作。
 
@@ -708,7 +743,9 @@ G) 多个操作可以组合为一个数组。
 
     try {
       const fullReply = await this.streamCallAgent(
-        AgentType.WRITER, message, 0.8,
+        AgentType.WRITER,
+        message,
+        0.8,
         { maxTokens: 2000, timeoutMs: 120000, systemPrompt },
         onChunk,
       );
@@ -718,7 +755,9 @@ G) 多个操作可以组合为一个数组。
       const actionsMatch = fullReply.match(/<!--ACTIONS:([\s\S]*?)-->/);
       if (actionsMatch) {
         reply = fullReply.replace(/<!--ACTIONS:[\s\S]*?-->/, '').trim();
-        try { suggestedActions = JSON.parse(actionsMatch[1]); } catch {}
+        try {
+          suggestedActions = JSON.parse(actionsMatch[1]);
+        } catch {}
       }
 
       return { reply, suggestedActions };
@@ -750,44 +789,53 @@ G) 多个操作可以组合为一个数组。
       select: { id: true, title: true, order: true, wordCount: true, status: true },
     });
     const chaptersOverview = allChapters.length
-      ? allChapters.map((c: any) =>
-          `${c.order}. ${c.title} (${c.wordCount}字${c.id === chapterId ? ' ← 当前编辑' : ''})`
-        ).join('\n')
+      ? allChapters
+          .map(
+            (c: any) =>
+              `${c.order}. ${c.title} (${c.wordCount}字${c.id === chapterId ? ' ← 当前编辑' : ''})`,
+          )
+          .join('\n')
       : '尚无章节';
 
-    const characterDetails = (context.characters || []).map((c: any) => {
-      const profile = c.profile;
-      const parts = [`「${c.name}」(${c.role || 'supporting'})`];
-      if (profile?.personality) parts.push(`性格: ${profile.personality}`);
-      if (profile?.currentGoal) parts.push(`目标: ${profile.currentGoal}`);
-      return parts.join(' | ');
-    }).join('\n') || '尚无角色';
+    const characterDetails =
+      (context.characters || [])
+        .map((c: any) => {
+          const profile = c.profile;
+          const parts = [`「${c.name}」(${c.role || 'supporting'})`];
+          if (profile?.personality) parts.push(`性格: ${profile.personality}`);
+          if (profile?.currentGoal) parts.push(`目标: ${profile.currentGoal}`);
+          return parts.join(' | ');
+        })
+        .join('\n') || '尚无角色';
 
     const contentSnippet = currentContent
-      ? (currentContent.length > 1200
-          ? `...${currentContent.slice(-1200)}`
-          : currentContent)
+      ? currentContent.length > 1200
+        ? `...${currentContent.slice(-1200)}`
+        : currentContent
       : '';
 
-    const currentChapter = chapterId
-      ? allChapters.find((c: any) => c.id === chapterId)
-      : null;
+    const currentChapter = chapterId ? allChapters.find((c: any) => c.id === chapterId) : null;
 
-    const worldDetail = (context.worldSettings || []).map((ws: any) => {
-      const parts: string[] = [];
-      if (ws.genre) parts.push(`类型: ${ws.genre}`);
-      if (ws.theme) parts.push(`主题: ${ws.theme}`);
-      if (ws.tone) parts.push(`基调: ${ws.tone}`);
-      return parts.join(' | ');
-    }).join('; ') || '未设定';
+    const worldDetail =
+      (context.worldSettings || [])
+        .map((ws: any) => {
+          const parts: string[] = [];
+          if (ws.genre) parts.push(`类型: ${ws.genre}`);
+          if (ws.theme) parts.push(`主题: ${ws.theme}`);
+          if (ws.tone) parts.push(`基调: ${ws.tone}`);
+          return parts.join(' | ');
+        })
+        .join('; ') || '未设定';
 
-    const plotlineDetail = (context.plotLines || []).map((pl: any) =>
-      `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 80)}`
-    ).join('\n') || '无';
+    const plotlineDetail =
+      (context.plotLines || [])
+        .map((pl: any) => `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 80)}`)
+        .join('\n') || '无';
 
-    const foreshadowingDetail = (context.foreshadowings || []).map((f: any) =>
-      `「${f.title}」: ${(f.content || '').slice(0, 60)}`
-    ).join('\n') || '无';
+    const foreshadowingDetail =
+      (context.foreshadowings || [])
+        .map((f: any) => `「${f.title}」: ${(f.content || '').slice(0, 60)}`)
+        .join('\n') || '无';
 
     // === Phase 1: 深度思考（分析用户意图、梳理上下文） ===
     onEvent({ type: 'thinking_start', data: {} });
@@ -892,7 +940,9 @@ F) analyze_text: {"type":"analyze_text","label":"分析描述","data":{"analysis
     const actionsMatch = fullReply.match(/<!--ACTIONS:([\s\S]*?)-->/);
     if (actionsMatch) {
       reply = fullReply.replace(/<!--ACTIONS:[\s\S]*?-->/, '').trim();
-      try { suggestedActions = JSON.parse(actionsMatch[1]); } catch {}
+      try {
+        suggestedActions = JSON.parse(actionsMatch[1]);
+      } catch {}
     }
 
     return { thinking: thinkingText, reply, suggestedActions };
@@ -995,7 +1045,11 @@ ${content}`;
       );
 
       // 最终冲刷——解析 buffer 中可能残留的最后一条建议
-      if (buffer.includes('<<<FIND>>>') && buffer.includes('<<<REPLACE>>>') && buffer.includes('<<<REASON>>>')) {
+      if (
+        buffer.includes('<<<FIND>>>') &&
+        buffer.includes('<<<REPLACE>>>') &&
+        buffer.includes('<<<REASON>>>')
+      ) {
         const findStart = buffer.indexOf('<<<FIND>>>');
         const replaceStart = buffer.indexOf('<<<REPLACE>>>');
         const reasonStart = buffer.indexOf('<<<REASON>>>');
@@ -1031,15 +1085,21 @@ ${content}`;
     const context = await this.loadContext(bookId, chapterId);
 
     const characterNames = (context.characters || []).map((c: any) => c.name).join('、') || '无';
-    const worldInfo = (context.worldSettings || []).map((ws: any) => {
-      const parts: string[] = [];
-      if (ws.genre) parts.push(ws.genre);
-      if (ws.tone) parts.push(ws.tone);
-      return parts.join('/');
-    }).join('; ') || '未设定';
+    const worldInfo =
+      (context.worldSettings || [])
+        .map((ws: any) => {
+          const parts: string[] = [];
+          if (ws.genre) parts.push(ws.genre);
+          if (ws.tone) parts.push(ws.tone);
+          return parts.join('/');
+        })
+        .join('; ') || '未设定';
 
     const chapterInfo = chapterTitle ? `章节「${chapterTitle}」` : '当前章节';
-    const contentPreview = content.length > 6000 ? content.slice(0, 3000) + '\n\n...(中间省略)...\n\n' + content.slice(-3000) : content;
+    const contentPreview =
+      content.length > 6000
+        ? content.slice(0, 3000) + '\n\n...(中间省略)...\n\n' + content.slice(-3000)
+        : content;
 
     const toolPrompts: Record<string, string> = {
       proofread: `你是一名专业的中文文学编辑。请对以下小说内容进行全面校对，找出所有问题。
@@ -1193,7 +1253,10 @@ ${contentPreview}
     bookId: string,
     message: string,
     chatHistory: Array<{ role: string; content: string }> = [],
-  ): Promise<{ reply: string; suggestedActions?: Array<{ type: string; label: string; data: any }> }> {
+  ): Promise<{
+    reply: string;
+    suggestedActions?: Array<{ type: string; label: string; data: any }>;
+  }> {
     const context = await this.loadContext(bookId);
 
     const systemPrompt = `你是一个专业的AI小说创作助手。你可以帮助用户进行小说创作的各个方面。
@@ -1325,7 +1388,9 @@ ${contentPreview}
       type: AgentType.WRITER,
       result: result.result,
       diagnostics: parsed.issues,
-      warnings: parsed.issues.filter((i: any) => i.severity !== 'INFO').map((i: any) => i.description),
+      warnings: parsed.issues
+        .filter((i: any) => i.severity !== 'INFO')
+        .map((i: any) => i.description),
       status: result.status,
     };
   }
@@ -1356,32 +1421,40 @@ ${contentPreview}
     const context = await this.loadContext(bookId);
 
     // 3. 构建全文（限制 token，取每章前 2000 字）
-    const fullText = chapters.map((ch: any) => {
-      const excerpt = ch.content && ch.content.length > 2000
-        ? ch.content.slice(0, 2000) + '...(已省略)'
-        : (ch.content || '(空章节)');
-      return `=== 第${ch.order}章「${ch.title}」(${ch.wordCount}字) ===\n${excerpt}`;
-    }).join('\n\n');
+    const fullText = chapters
+      .map((ch: any) => {
+        const excerpt =
+          ch.content && ch.content.length > 2000
+            ? ch.content.slice(0, 2000) + '...(已省略)'
+            : ch.content || '(空章节)';
+        return `=== 第${ch.order}章「${ch.title}」(${ch.wordCount}字) ===\n${excerpt}`;
+      })
+      .join('\n\n');
 
     // 4. 构建已有伏笔信息
-    const existingForeshadowings = (context.foreshadowings || []).map((f: any) =>
-      `[${f.status}] 「${f.title}」: ${f.content}`
-    ).join('\n') || '尚无伏笔';
+    const existingForeshadowings =
+      (context.foreshadowings || [])
+        .map((f: any) => `[${f.status}] 「${f.title}」: ${f.content}`)
+        .join('\n') || '尚无伏笔';
 
     // 5. 角色列表
-    const characterList = (context.characters || []).map((c: any) => {
-      const p = c.profile;
-      const parts = [`「${c.name}」(${c.role || 'supporting'})`];
-      if (p?.personality) parts.push(`性格: ${p.personality}`);
-      if (p?.currentGoal) parts.push(`目标: ${p.currentGoal}`);
-      if (p?.arc) parts.push(`弧线: ${p.arc}`);
-      return parts.join(' | ');
-    }).join('\n') || '无角色';
+    const characterList =
+      (context.characters || [])
+        .map((c: any) => {
+          const p = c.profile;
+          const parts = [`「${c.name}」(${c.role || 'supporting'})`];
+          if (p?.personality) parts.push(`性格: ${p.personality}`);
+          if (p?.currentGoal) parts.push(`目标: ${p.currentGoal}`);
+          if (p?.arc) parts.push(`弧线: ${p.arc}`);
+          return parts.join(' | ');
+        })
+        .join('\n') || '无角色';
 
     // 6. 剧情线
-    const plotlineList = (context.plotLines || []).map((pl: any) =>
-      `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 100)}`
-    ).join('\n') || '无剧情线';
+    const plotlineList =
+      (context.plotLines || [])
+        .map((pl: any) => `[${pl.type}]「${pl.title}」: ${(pl.description || '').slice(0, 100)}`)
+        .join('\n') || '无剧情线';
 
     // 7. 根据分析类型构建特化的 system prompt
     const analysisPrompts: Record<string, string> = {
@@ -1461,7 +1534,9 @@ ${plotlineList}
 
     try {
       const fullReply = await this.streamCallAgent(
-        AgentType.CONSISTENCY, userPrompt, 0.5,
+        AgentType.CONSISTENCY,
+        userPrompt,
+        0.5,
         { maxTokens: 4096, timeoutMs: 300000, systemPrompt },
         onChunk,
       );
@@ -1495,41 +1570,51 @@ ${plotlineList}
     currentData: Record<string, any>,
   ): Promise<Record<string, string>> {
     const context = await this.loadContext(bookId);
-    const bookChars = (context.characters || [])
-      .map((c: any) => {
-        const p = c.profile;
-        return p ? `${c.name}(${p.role || '未设定'})` : c.name;
-      })
-      .join('、') || '无';
-    const bookPlots = (context.plotLines || [])
-      .map((p: any) => `[${p.type}] ${p.title}${p.description ? ': ' + p.description.slice(0, 60) : ''}`)
-      .join('\n') || '无';
+    const bookChars =
+      (context.characters || [])
+        .map((c: any) => {
+          const p = c.profile;
+          return p ? `${c.name}(${p.role || '未设定'})` : c.name;
+        })
+        .join('、') || '无';
+    const bookPlots =
+      (context.plotLines || [])
+        .map(
+          (p: any) =>
+            `[${p.type}] ${p.title}${p.description ? ': ' + p.description.slice(0, 60) : ''}`,
+        )
+        .join('\n') || '无';
     const ws0 = context.worldSettings[0] as any;
     const genre = ws0?.genre || '未设定';
     const theme = ws0?.theme || '';
     const tone = ws0?.tone || '';
-    const foreshadowings = (context.foreshadowings || [])
-      .map((f: any) => f.title)
-      .join('、') || '无';
+    const foreshadowings =
+      (context.foreshadowings || []).map((f: any) => f.title).join('、') || '无';
 
     let systemPrompt = '';
     let userPrompt = '';
 
     if (type === 'character') {
       const fieldMap: Record<string, string> = {
-        name: '角色姓名', role: '角色定位(主角/配角/反派/龙套)',
-        personality: '性格特征(至少3个维度)', background: '背景故事(100-200字)',
-        motivation: '核心动机(驱动行动的根本原因)', fear: '内心恐惧(最深层的恐惧或心理阴影)',
-        strength: '能力优势(独特技能或性格优势)', weakness: '致命弱点(影响决策的性格/能力缺陷)',
-        currentGoal: '当前目标(本阶段追求)', longTermGoal: '终极目标(贯穿全书的追求)',
-        arc: '角色弧光(成长变化轨迹)', appearance: '外貌特征(辨识度高的2-3个特征)',
+        name: '角色姓名',
+        role: '角色定位(主角/配角/反派/龙套)',
+        personality: '性格特征(至少3个维度)',
+        background: '背景故事(100-200字)',
+        motivation: '核心动机(驱动行动的根本原因)',
+        fear: '内心恐惧(最深层的恐惧或心理阴影)',
+        strength: '能力优势(独特技能或性格优势)',
+        weakness: '致命弱点(影响决策的性格/能力缺陷)',
+        currentGoal: '当前目标(本阶段追求)',
+        longTermGoal: '终极目标(贯穿全书的追求)',
+        arc: '角色弧光(成长变化轨迹)',
+        appearance: '外貌特征(辨识度高的2-3个特征)',
         catchphrase: '口头禅(体现性格的标志性台词)',
       };
       const fields = Object.keys(fieldMap);
       const existing = fields
-        .map(f => `- ${fieldMap[f]}(${f}): ${currentData[f] || '(空)'}`)
+        .map((f) => `- ${fieldMap[f]}(${f}): ${currentData[f] || '(空)'}`)
         .join('\n');
-      const emptyFields = fields.filter(f => !currentData[f] || currentData[f] === '');
+      const emptyFields = fields.filter((f) => !currentData[f] || currentData[f] === '');
 
       systemPrompt = `你是资深小说角色设计师，擅长创建立体、有深度的虚构人物。
 
@@ -1553,11 +1638,12 @@ ${plotlineList}
 ${existing}
 
 请根据作品背景和已有角色关系网，为这个角色提供高质量的补全和优化建议。直接返回 JSON。`;
-
     } else if (type === 'world_setting') {
       const fieldMap: Record<string, string> = {
-        genre: '题材类型', theme: '主题思想(作品的核心表达)',
-        tone: '叙事风格/基调', targetWordCount: '目标总字数',
+        genre: '题材类型',
+        theme: '主题思想(作品的核心表达)',
+        tone: '叙事风格/基调',
+        targetWordCount: '目标总字数',
         powerSystem: '力量体系(修炼/科技/魔法体系的层级与规则)',
         geography: '地理环境(世界地图、重要地点及其特色)',
         society: '社会结构(政治体制、阶层划分、主要势力)',
@@ -1565,9 +1651,11 @@ ${existing}
         rules: '特殊规则(世界独有的物理法则/禁忌/契约)',
       };
       const existing = Object.keys(fieldMap)
-        .map(k => `- ${fieldMap[k]}(${k}): ${currentData[k] || '(空)'}`)
+        .map((k) => `- ${fieldMap[k]}(${k}): ${currentData[k] || '(空)'}`)
         .join('\n');
-      const emptyFields = Object.keys(fieldMap).filter(k => !currentData[k] || currentData[k] === '' || currentData[k] === 0);
+      const emptyFields = Object.keys(fieldMap).filter(
+        (k) => !currentData[k] || currentData[k] === '' || currentData[k] === 0,
+      );
 
       systemPrompt = `你是资深小说世界观架构师，擅长构建自洽、有深度的虚构世界。
 
@@ -1591,7 +1679,6 @@ ${existing}
 ${existing}
 
 请根据已有角色和剧情线，构建一个自洽且充满故事可能性的世界观。直接返回 JSON。`;
-
     } else {
       // outline type
       const existing = Object.entries(currentData)
@@ -1631,7 +1718,10 @@ ${existing}
 
     // 提取 JSON
     try {
-      const cleaned = agentResp.result.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
+      const cleaned = agentResp.result
+        .replace(/```(?:json)?\s*/g, '')
+        .replace(/```/g, '')
+        .trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) return JSON.parse(jsonMatch[0]);
     } catch (e) {
@@ -1643,31 +1733,43 @@ ${existing}
   /**
    * AI 建议角色关系——分析已有角色，给出缺失关系的建议
    */
-  async suggestRelationships(bookId: string): Promise<Array<{
-    fromName: string; toName: string; type: string; description: string; status: string;
-  }>> {
+  async suggestRelationships(bookId: string): Promise<
+    Array<{
+      fromName: string;
+      toName: string;
+      type: string;
+      description: string;
+      status: string;
+    }>
+  > {
     const context = await this.loadContext(bookId);
     const chars = (context.characters || []) as any[];
     if (chars.length < 2) return [];
 
     // 构建角色摘要
-    const charSummaries = chars.map((c: any) => {
-      const p = c.profile || {};
-      return `- ${c.name}(${p.role || '未设定'}): 性格=${p.personality || '未设定'}, 动机=${p.motivation || '未设定'}, 目标=${p.currentGoal || '未设定'}`;
-    }).join('\n');
+    const charSummaries = chars
+      .map((c: any) => {
+        const p = c.profile || {};
+        return `- ${c.name}(${p.role || '未设定'}): 性格=${p.personality || '未设定'}, 动机=${p.motivation || '未设定'}, 目标=${p.currentGoal || '未设定'}`;
+      })
+      .join('\n');
 
     // 构建已有关系
     const existingRels = await this.prisma.characterRelationship.findMany({
       where: { bookId },
       include: { fromChar: true, toChar: true },
     });
-    const existingRelStr = existingRels.length > 0
-      ? existingRels.map((r: any) => `- ${r.fromChar.name} → ${r.type} → ${r.toChar.name} (${r.status})`).join('\n')
-      : '无';
+    const existingRelStr =
+      existingRels.length > 0
+        ? existingRels
+            .map((r: any) => `- ${r.fromChar.name} → ${r.type} → ${r.toChar.name} (${r.status})`)
+            .join('\n')
+        : '无';
 
-    const ws0 = (context.worldSettings[0] as any);
+    const ws0 = context.worldSettings[0] as any;
     const genre = ws0?.genre || '未设定';
-    const plots = (context.plotLines || []).map((p: any) => `[${p.type}] ${p.title}`).join('、') || '无';
+    const plots =
+      (context.plotLines || []).map((p: any) => `[${p.type}] ${p.title}`).join('、') || '无';
 
     const systemPrompt = `你是资深小说角色关系设计师，擅长构建复杂而有张力的人物关系网。
 
@@ -1705,7 +1807,10 @@ ${existingRelStr}
     if (!agentResp.result) return [];
 
     try {
-      const cleaned = agentResp.result.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim();
+      const cleaned = agentResp.result
+        .replace(/```(?:json)?\s*/g, '')
+        .replace(/```/g, '')
+        .trim();
       const arrMatch = cleaned.match(/\[[\s\S]*\]/);
       if (arrMatch) {
         const arr = JSON.parse(arrMatch[0]);
@@ -1761,7 +1866,9 @@ ${existingRelStr}
       const maxTokens = options?.maxTokens ?? 2000;
       const timeoutMs = options?.timeoutMs ?? 120000;
 
-      this.logger.log(`[callAgent] ${type} | maxTokens=${maxTokens} | timeout=${timeoutMs}ms | prompt=${prompt.length}chars`);
+      this.logger.log(
+        `[callAgent] ${type} | maxTokens=${maxTokens} | timeout=${timeoutMs}ms | prompt=${prompt.length}chars`,
+      );
 
       const response = await axios.post(
         this.apiUrl,
@@ -1787,10 +1894,14 @@ ${existingRelStr}
       const finishReason = response.data.choices[0].finish_reason;
 
       if (finishReason === 'length') {
-        this.logger.warn(`[callAgent] ${type} 输出被截断 (finish_reason=length)，当前 max_tokens=${maxTokens}`);
+        this.logger.warn(
+          `[callAgent] ${type} 输出被截断 (finish_reason=length)，当前 max_tokens=${maxTokens}`,
+        );
       }
 
-      this.logger.log(`[callAgent] ${type} 完成 | ${result?.length || 0}chars | ${Date.now() - startTime}ms`);
+      this.logger.log(
+        `[callAgent] ${type} 完成 | ${result?.length || 0}chars | ${Date.now() - startTime}ms`,
+      );
 
       return {
         type,
@@ -1853,7 +1964,10 @@ ${existingRelStr}
       const stream = response.data;
 
       stream.on('data', (buf: Buffer) => {
-        const lines = buf.toString().split('\n').filter((l: string) => l.trim().startsWith('data:'));
+        const lines = buf
+          .toString()
+          .split('\n')
+          .filter((l: string) => l.trim().startsWith('data:'));
         for (const line of lines) {
           const json = line.replace(/^data:\s*/, '').trim();
           if (json === '[DONE]') continue;
@@ -1864,7 +1978,9 @@ ${existingRelStr}
               fullText += delta;
               onChunk(delta);
             }
-          } catch { /* 忽略解析错误 */ }
+          } catch {
+            /* 忽略解析错误 */
+          }
         }
       });
 
@@ -1899,7 +2015,9 @@ ${existingRelStr}
 
     try {
       const rawText = await this.streamCallAgent(
-        AgentType.PLANNER, prompt, 0.85,
+        AgentType.PLANNER,
+        prompt,
+        0.85,
         { maxTokens: 4096, timeoutMs: 300000, systemPrompt: planSystemPrompt },
         (chunk) => onEvent({ type: 'token', data: { text: chunk } }),
       );
@@ -1907,9 +2025,15 @@ ${existingRelStr}
       onEvent({ type: 'status', data: { step: '正在解析计划...' } });
       const plan = this.parseCreativePlan(rawText, chapterCount);
 
-      await this.logSession(bookId, undefined, 'CREATIVE_PLAN',
+      await this.logSession(
+        bookId,
+        undefined,
+        'CREATIVE_PLAN',
         JSON.stringify({ userPrompt, chapterCount }),
-        JSON.stringify(plan), 'COMPLETED', 0);
+        JSON.stringify(plan),
+        'COMPLETED',
+        0,
+      );
 
       onEvent({ type: 'plan', data: plan });
       return plan;
@@ -1929,14 +2053,24 @@ ${existingRelStr}
     onEvent: (event: { type: string; data: any }) => void,
   ): Promise<any> {
     const result: any = {
-      characterIds: [], plotLineIds: [], foreshadowingIds: [], chapterResults: [],
+      characterIds: [],
+      plotLineIds: [],
+      foreshadowingIds: [],
+      chapterResults: [],
     };
-    const totalSteps = 1 + plan.characters.length + plan.plotLines.length + plan.foreshadowings.length + plan.chapterOutlines.length;
+    const totalSteps =
+      1 +
+      plan.characters.length +
+      plan.plotLines.length +
+      plan.foreshadowings.length +
+      plan.chapterOutlines.length;
 
     // 1. 世界观
     onEvent({ type: 'progress', data: { step: '创建世界观', current: 0, total: totalSteps } });
     const ws = await this.plannerService.createWorldSetting(bookId, {
-      genre: plan.genre, theme: `${plan.theme}\n${plan.worldSetting.background}`, tone: plan.tone,
+      genre: plan.genre,
+      theme: `${plan.theme}\n${plan.worldSetting.background}`,
+      tone: plan.tone,
     });
     result.worldSettingId = ws.id;
     onEvent({ type: 'progress', data: { step: '世界观已创建', current: 1, total: totalSteps } });
@@ -1944,14 +2078,25 @@ ${existingRelStr}
     // 2. 角色
     for (let i = 0; i < plan.characters.length; i++) {
       const charDef = plan.characters[i];
-      onEvent({ type: 'progress', data: { step: `创建角色: ${charDef.name}`, current: 1 + i, total: totalSteps } });
+      onEvent({
+        type: 'progress',
+        data: { step: `创建角色: ${charDef.name}`, current: 1 + i, total: totalSteps },
+      });
       try {
         const char = await this.prisma.character.create({
-          data: { bookId, name: charDef.name, role: charDef.role, bio: `${charDef.personality}\n背景: ${charDef.background}\n目标: ${charDef.goal}` },
+          data: {
+            bookId,
+            name: charDef.name,
+            role: charDef.role,
+            bio: `${charDef.personality}\n背景: ${charDef.background}\n目标: ${charDef.goal}`,
+          },
         });
         await this.characterService.upsertCharacterProfile(char.id, {
-          personality: charDef.personality, background: charDef.background,
-          currentGoal: charDef.goal, strength: charDef.strength || '', weakness: charDef.weakness || '',
+          personality: charDef.personality,
+          background: charDef.background,
+          currentGoal: charDef.goal,
+          strength: charDef.strength || '',
+          weakness: charDef.weakness || '',
         });
         result.characterIds.push(char.id);
       } catch (err: any) {
@@ -1962,11 +2107,19 @@ ${existingRelStr}
     // 3. 剧情线
     const charsDone = plan.characters.length;
     for (let i = 0; i < plan.plotLines.length; i++) {
-      onEvent({ type: 'progress', data: { step: `创建剧情线: ${plan.plotLines[i].title}`, current: 1 + charsDone + i, total: totalSteps } });
+      onEvent({
+        type: 'progress',
+        data: {
+          step: `创建剧情线: ${plan.plotLines[i].title}`,
+          current: 1 + charsDone + i,
+          total: totalSteps,
+        },
+      });
       try {
         const pl = await this.plannerService.createPlotLine(bookId, {
           title: plan.plotLines[i].title,
-          description: plan.plotLines[i].description + '\n关键事件: ' + plan.plotLines[i].keyEvents.join(', '),
+          description:
+            plan.plotLines[i].description + '\n关键事件: ' + plan.plotLines[i].keyEvents.join(', '),
           type: plan.plotLines[i].type as any,
         });
         result.plotLineIds.push(pl.id);
@@ -1978,10 +2131,18 @@ ${existingRelStr}
     // 4. 伏笔
     const plotsDone = charsDone + plan.plotLines.length;
     for (let i = 0; i < plan.foreshadowings.length; i++) {
-      onEvent({ type: 'progress', data: { step: `创建伏笔: ${plan.foreshadowings[i].title}`, current: 1 + plotsDone + i, total: totalSteps } });
+      onEvent({
+        type: 'progress',
+        data: {
+          step: `创建伏笔: ${plan.foreshadowings[i].title}`,
+          current: 1 + plotsDone + i,
+          total: totalSteps,
+        },
+      });
       try {
         const created = await this.plannerService.createForeshadowing(bookId, {
-          title: plan.foreshadowings[i].title, content: plan.foreshadowings[i].content,
+          title: plan.foreshadowings[i].title,
+          content: plan.foreshadowings[i].content,
         });
         result.foreshadowingIds.push(created.id);
       } catch (err: any) {
@@ -1991,35 +2152,69 @@ ${existingRelStr}
 
     // 5. 章节（流式逐 token 推送）
     const fsDone = plotsDone + plan.foreshadowings.length;
-    const existingChapters = await this.prisma.chapter.findMany({ where: { bookId }, orderBy: { order: 'asc' } });
-    const nextOrder = existingChapters.length > 0 ? Math.max(...existingChapters.map(c => c.order)) + 1 : 1;
+    const existingChapters = await this.prisma.chapter.findMany({
+      where: { bookId },
+      orderBy: { order: 'asc' },
+    });
+    const nextOrder =
+      existingChapters.length > 0 ? Math.max(...existingChapters.map((c) => c.order)) + 1 : 1;
     const context = await this.loadContext(bookId);
 
     for (let i = 0; i < plan.chapterOutlines.length; i++) {
       const outline = plan.chapterOutlines[i];
-      onEvent({ type: 'progress', data: { step: `生成章节: ${outline.title}`, current: 1 + fsDone + i, total: totalSteps } });
+      onEvent({
+        type: 'progress',
+        data: { step: `生成章节: ${outline.title}`, current: 1 + fsDone + i, total: totalSteps },
+      });
 
       try {
         const chapter = await this.prisma.chapter.create({
-          data: { bookId, volumeId: volumeId || null, title: outline.title, content: '', order: nextOrder + i, status: 'DRAFT' },
+          data: {
+            bookId,
+            volumeId: volumeId || null,
+            title: outline.title,
+            content: '',
+            order: nextOrder + i,
+            status: 'DRAFT',
+          },
         });
 
         const chapterPrompt = this.buildChapterFromPlanPrompt(plan, outline, i, context);
         const chapterText = await this.streamCallAgent(
-          AgentType.WRITER, chapterPrompt, 0.75,
+          AgentType.WRITER,
+          chapterPrompt,
+          0.75,
           { maxTokens: 4000, timeoutMs: 120000 },
-          (chunk) => onEvent({ type: 'chapter_token', data: { chapterIndex: i, title: outline.title, text: chunk } }),
+          (chunk) =>
+            onEvent({
+              type: 'chapter_token',
+              data: { chapterIndex: i, title: outline.title, text: chunk },
+            }),
         );
 
-        await this.prisma.chapter.update({ where: { id: chapter.id }, data: { content: chapterText } });
+        await this.prisma.chapter.update({
+          where: { id: chapter.id },
+          data: { content: chapterText },
+        });
 
-        result.chapterResults.push({ chapterId: chapter.id, title: outline.title, wordCount: chapterText.length });
-        onEvent({ type: 'chapter_done', data: { chapterIndex: i, title: outline.title, wordCount: chapterText.length } });
+        result.chapterResults.push({
+          chapterId: chapter.id,
+          title: outline.title,
+          wordCount: chapterText.length,
+        });
+        onEvent({
+          type: 'chapter_done',
+          data: { chapterIndex: i, title: outline.title, wordCount: chapterText.length },
+        });
 
-        context.chapterSummary = (context.chapterSummary || '') + `\n第${i + 1}章 ${outline.title}: ${outline.summary}`;
+        context.chapterSummary =
+          (context.chapterSummary || '') + `\n第${i + 1}章 ${outline.title}: ${outline.summary}`;
       } catch (err: any) {
         this.logger.warn(`章节生成失败 ${outline.title}: ${err.message}`);
-        onEvent({ type: 'chapter_error', data: { chapterIndex: i, title: outline.title, error: err.message } });
+        onEvent({
+          type: 'chapter_error',
+          data: { chapterIndex: i, title: outline.title, error: err.message },
+        });
       }
     }
 
@@ -2172,9 +2367,12 @@ ${existingRelStr}
     });
 
     prompt += `\n## 主线剧情\n`;
-    (plotLines || []).filter((pl: any) => pl.type === 'MAIN').slice(0, 2).forEach((pl: any) => {
-      prompt += `- ${pl.title}: ${pl.description || ''}\n`;
-    });
+    (plotLines || [])
+      .filter((pl: any) => pl.type === 'MAIN')
+      .slice(0, 2)
+      .forEach((pl: any) => {
+        prompt += `- ${pl.title}: ${pl.description || ''}\n`;
+      });
 
     if (chapterSummary) {
       prompt += `\n## 前情摘要\n${chapterSummary}\n`;
@@ -2271,11 +2469,13 @@ ${existingRelStr}
     }
 
     return {
-      issues: [{
-        type: 'logic',
-        severity: 'INFO',
-        description: text.slice(0, 200),
-      }],
+      issues: [
+        {
+          type: 'logic',
+          severity: 'INFO',
+          description: text.slice(0, 200),
+        },
+      ],
     };
   }
 
@@ -2375,7 +2575,7 @@ ${existingRelStr}
 
     prompt += `## 本章涉及角色\n`;
     for (const charName of outline.involvedCharacters) {
-      const charDef = plan.characters.find(c => c.name === charName);
+      const charDef = plan.characters.find((c) => c.name === charName);
       if (charDef) {
         prompt += `- ${charDef.name} (${charDef.role}): ${charDef.personality}，目标: ${charDef.goal}\n`;
       }
@@ -2383,9 +2583,11 @@ ${existingRelStr}
     prompt += `\n`;
 
     prompt += `## 主线剧情\n`;
-    plan.plotLines.filter(pl => pl.type === 'MAIN').forEach(pl => {
-      prompt += `- ${pl.title}: ${pl.description}\n`;
-    });
+    plan.plotLines
+      .filter((pl) => pl.type === 'MAIN')
+      .forEach((pl) => {
+        prompt += `- ${pl.title}: ${pl.description}\n`;
+      });
     prompt += `\n`;
 
     if (chapterIndex > 0 && context.chapterSummary) {
@@ -2393,10 +2595,14 @@ ${existingRelStr}
     }
 
     // 需要在本章埋设的伏笔
-    const chapterForeshadowings = plan.foreshadowings.filter(f => f.plantChapter === chapterIndex + 1);
+    const chapterForeshadowings = plan.foreshadowings.filter(
+      (f) => f.plantChapter === chapterIndex + 1,
+    );
     if (chapterForeshadowings.length > 0) {
       prompt += `## 需在本章埋设的伏笔\n`;
-      chapterForeshadowings.forEach(f => { prompt += `- ${f.title}: ${f.content}\n`; });
+      chapterForeshadowings.forEach((f) => {
+        prompt += `- ${f.title}: ${f.content}\n`;
+      });
       prompt += `\n`;
     }
 
@@ -2436,7 +2642,10 @@ ${existingRelStr}
         let depth = 0;
         for (let i = start; i < text.length; i++) {
           if (text[i] === '{') depth++;
-          else if (text[i] === '}') { depth--; if (depth === 0) return text.slice(start, i + 1); }
+          else if (text[i] === '}') {
+            depth--;
+            if (depth === 0) return text.slice(start, i + 1);
+          }
         }
         // 如果括号不完整，尝试补全
         return text.slice(start) + '}';
@@ -2457,8 +2666,10 @@ ${existingRelStr}
         const cleaned = this.repairJson(jsonStr);
 
         const parsed = JSON.parse(cleaned);
-        this.logger.log(`[parseCreativePlan] 策略${idx + 1}成功解析，title=${parsed.title}，` +
-          `characters=${parsed.characters?.length || 0}，plotLines=${parsed.plotLines?.length || 0}`);
+        this.logger.log(
+          `[parseCreativePlan] 策略${idx + 1}成功解析，title=${parsed.title}，` +
+            `characters=${parsed.characters?.length || 0}，plotLines=${parsed.plotLines?.length || 0}`,
+        );
 
         // 验证并填充默认值
         return {
@@ -2467,41 +2678,62 @@ ${existingRelStr}
           theme: parsed.theme || '',
           tone: parsed.tone || '标准',
           worldSetting: {
-            background: parsed.worldSetting?.background || parsed.world_setting?.background || '未设定',
-            powerSystem: parsed.worldSetting?.powerSystem || parsed.world_setting?.powerSystem || parsed.worldSetting?.power_system,
+            background:
+              parsed.worldSetting?.background || parsed.world_setting?.background || '未设定',
+            powerSystem:
+              parsed.worldSetting?.powerSystem ||
+              parsed.world_setting?.powerSystem ||
+              parsed.worldSetting?.power_system,
             geography: parsed.worldSetting?.geography || parsed.world_setting?.geography,
-            socialStructure: parsed.worldSetting?.socialStructure || parsed.world_setting?.socialStructure || parsed.worldSetting?.social_structure,
+            socialStructure:
+              parsed.worldSetting?.socialStructure ||
+              parsed.world_setting?.socialStructure ||
+              parsed.worldSetting?.social_structure,
             rules: parsed.worldSetting?.rules || parsed.world_setting?.rules,
           },
-          characters: Array.isArray(parsed.characters) ? parsed.characters.map((c: any) => ({
-            name: c.name || '未命名',
-            role: c.role || 'SUPPORTING',
-            personality: c.personality || '',
-            background: c.background || '',
-            goal: c.goal || '',
-            strength: c.strength || '',
-            weakness: c.weakness || '',
-          })) : [],
-          plotLines: Array.isArray(parsed.plotLines || parsed.plot_lines) ? (parsed.plotLines || parsed.plot_lines).map((pl: any) => ({
-            title: pl.title || '未命名线',
-            type: (['MAIN', 'SUB', 'HIDDEN'].includes(pl.type)) ? pl.type : 'MAIN',
-            description: pl.description || '',
-            keyEvents: Array.isArray(pl.keyEvents || pl.key_events) ? (pl.keyEvents || pl.key_events) : [],
-          })) : [],
-          chapterOutlines: Array.isArray(parsed.chapterOutlines || parsed.chapter_outlines)
-            ? (parsed.chapterOutlines || parsed.chapter_outlines).slice(0, defaultChapterCount).map((co: any) => ({
-              title: co.title || '未命名章节',
-              summary: co.summary || '',
-              keyScenes: Array.isArray(co.keyScenes || co.key_scenes) ? (co.keyScenes || co.key_scenes) : [],
-              involvedCharacters: Array.isArray(co.involvedCharacters || co.involved_characters) ? (co.involvedCharacters || co.involved_characters) : [],
-            }))
+          characters: Array.isArray(parsed.characters)
+            ? parsed.characters.map((c: any) => ({
+                name: c.name || '未命名',
+                role: c.role || 'SUPPORTING',
+                personality: c.personality || '',
+                background: c.background || '',
+                goal: c.goal || '',
+                strength: c.strength || '',
+                weakness: c.weakness || '',
+              }))
             : [],
-          foreshadowings: Array.isArray(parsed.foreshadowings) ? parsed.foreshadowings.map((f: any) => ({
-            title: f.title || '未命名伏笔',
-            content: f.content || '',
-            plantChapter: f.plantChapter || f.plant_chapter || 1,
-            resolveChapter: f.resolveChapter || f.resolve_chapter,
-          })) : [],
+          plotLines: Array.isArray(parsed.plotLines || parsed.plot_lines)
+            ? (parsed.plotLines || parsed.plot_lines).map((pl: any) => ({
+                title: pl.title || '未命名线',
+                type: ['MAIN', 'SUB', 'HIDDEN'].includes(pl.type) ? pl.type : 'MAIN',
+                description: pl.description || '',
+                keyEvents: Array.isArray(pl.keyEvents || pl.key_events)
+                  ? pl.keyEvents || pl.key_events
+                  : [],
+              }))
+            : [],
+          chapterOutlines: Array.isArray(parsed.chapterOutlines || parsed.chapter_outlines)
+            ? (parsed.chapterOutlines || parsed.chapter_outlines)
+                .slice(0, defaultChapterCount)
+                .map((co: any) => ({
+                  title: co.title || '未命名章节',
+                  summary: co.summary || '',
+                  keyScenes: Array.isArray(co.keyScenes || co.key_scenes)
+                    ? co.keyScenes || co.key_scenes
+                    : [],
+                  involvedCharacters: Array.isArray(co.involvedCharacters || co.involved_characters)
+                    ? co.involvedCharacters || co.involved_characters
+                    : [],
+                }))
+            : [],
+          foreshadowings: Array.isArray(parsed.foreshadowings)
+            ? parsed.foreshadowings.map((f: any) => ({
+                title: f.title || '未命名伏笔',
+                content: f.content || '',
+                plantChapter: f.plantChapter || f.plant_chapter || 1,
+                resolveChapter: f.resolveChapter || f.resolve_chapter,
+              }))
+            : [],
         };
       } catch (e: any) {
         this.logger.warn(`[parseCreativePlan] 策略${idx + 1}解析失败: ${e.message}`);
@@ -2509,7 +2741,9 @@ ${existingRelStr}
     }
 
     // 所有策略都失败 - 抛错而不是降级
-    this.logger.error(`[parseCreativePlan] 所有JSON解析策略均失败，原始文本: ${text?.slice(0, 500)}`);
+    this.logger.error(
+      `[parseCreativePlan] 所有JSON解析策略均失败，原始文本: ${text?.slice(0, 500)}`,
+    );
     throw new Error('AI 返回的创意计划格式无法解析，请重试');
   }
 
@@ -2529,13 +2763,18 @@ ${existingRelStr}
     s = s.replace(/'/g, '"');
 
     // 3. 尝试直接解析，如果成功就直接返回
-    try { JSON.parse(s); return s; } catch {}
+    try {
+      JSON.parse(s);
+      return s;
+    } catch {}
 
     // 4. 逐行修复未引号的 value
     const lines = s.split('\n');
-    const repairedLines = lines.map(line => {
+    const repairedLines = lines.map((line) => {
       // 匹配 "key": value 模式（value 未被引号包裹，且不是 数字/true/false/null/[/{）
-      const match = line.match(/^(\s*"[^"]+"\s*:\s*)([^"{\[\d\-\s][^,}\]]*[^,}\]\s])\s*([,}\]]?\s*)$/);
+      const match = line.match(
+        /^(\s*"[^"]+"\s*:\s*)([^"{\[\d\-\s][^,}\]]*[^,}\]\s])\s*([,}\]]?\s*)$/,
+      );
       if (match) {
         const [, prefix, value, suffix] = match;
         // 排除 true/false/null

@@ -608,21 +608,30 @@ function getStatusText(status: string) {
     </transition>
 
     <!-- ② 层面切换标签 -->
-    <div class="flex border-b border-border bg-surface-secondary/80 relative">
-      <button
-        v-for="layer in [
-          { key: 'strategy', label: '世界观' },
-          { key: 'tactical', label: '角色' },
-          { key: 'execution', label: 'AI 写作' }
-        ]"
-        :key="layer.key"
-        @click="activeLayer = layer.key as LayerType"
-        class="flex-1 px-3 py-2.5 text-xs transition-all duration-200 flex items-center justify-center gap-1.5 font-medium relative"
-        :class="activeLayer === layer.key ? 'text-brand bg-white' : 'text-text-muted hover:text-text-secondary hover:bg-white/60'"
-      >
-        <span>{{ layer.label }}</span>
-        <span v-if="activeLayer === layer.key" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-brand to-ai-primary rounded-full"></span>
-      </button>
+    <div class="p-2 border-b border-border bg-white relative">
+      <div class="flex bg-surface-secondary/80 rounded-xl p-1 shadow-inner relative">
+        <!-- 滑动背景块 -->
+        <div class="absolute inset-y-1 rounded-lg bg-white shadow-sm transition-all duration-300 ease-out" 
+             :style="{ 
+               width: 'calc(' + (100/3) + '% - 6px)', 
+               left: (['strategy', 'tactical', 'execution'].indexOf(activeLayer) * (100/3)) + '%',
+               marginLeft: '3px'
+             }">
+        </div>
+        <button
+          v-for="layer in [
+            { key: 'strategy', label: '世界观' },
+            { key: 'tactical', label: '角色' },
+            { key: 'execution', label: 'AI 写作' }
+          ]"
+          :key="layer.key"
+          @click="activeLayer = layer.key as LayerType"
+          class="flex-1 py-2 text-xs transition-colors duration-200 flex items-center justify-center font-medium relative z-10"
+          :class="activeLayer === layer.key ? 'text-brand' : 'text-text-muted hover:text-text-secondary'"
+        >
+          {{ layer.label }}
+        </button>
+      </div>
     </div>
 
     <!-- 战略层：世界观/大纲/伏笔 -->
@@ -756,58 +765,55 @@ function getStatusText(status: string) {
 
           <!-- 空状态 -->
           <template v-if="agentStore.chatMessages.length === 0 && !agentStore.pendingPlan">
-            <div class="text-center py-6 animate-msg-in">
-              <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-brand-50 via-purple-50 to-indigo-50 border border-brand/10 flex items-center justify-center shadow-md relative overflow-hidden">
-                <div class="absolute inset-0 animate-shimmer opacity-40"></div>
-                <svg class="w-8 h-8 text-brand relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+            <div class="text-center py-6 animate-msg-in flex flex-col items-center">
+              <div class="w-14 h-14 mb-4 rounded-full bg-gradient-to-tr from-brand-50 to-blue-50 border border-brand/20 flex items-center justify-center shadow-sm relative overflow-hidden group">
+                <div class="absolute inset-0 bg-brand/5 group-hover:bg-brand/10 transition-colors"></div>
+                <svg class="w-7 h-7 text-brand relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
               </div>
-              <h3 class="text-sm font-bold text-text-primary mb-0.5">AI 创作助手</h3>
-              <p class="text-[11px] text-text-muted">智能写作 · 灵感生成 · 润色优化</p>
+              <h3 class="text-sm font-bold text-text-primary mb-1">AI 创作助手</h3>
+              <p class="text-[11px] text-text-muted mb-5">智能写作 · 灵感生成 · 润色优化</p>
 
               <!-- 快捷问题推荐区 -->
-              <div class="mt-3 p-3 bg-surface-secondary/60 rounded-xl border border-border/50">
-                <div class="text-[10px] text-text-muted mb-2 flex items-center justify-center gap-1">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
-                  内容由AI生成，仅供参考
-                </div>
-                <div class="space-y-1.5">
-                  <button
-                    v-for="qp in quickPrompts"
-                    :key="qp.label"
-                    @click="useQuickPrompt(qp.label)"
-                    class="w-full text-left px-3 py-2.5 text-xs bg-white hover:bg-brand-50 border border-border/80 rounded-xl transition-all hover:border-brand/30 hover:shadow-sm text-text-secondary group active:scale-[0.98]"
-                  >
-                    <span class="mr-1.5 w-1 h-1 rounded-full bg-brand/40 inline-block shrink-0"></span>{{ qp.label }}
-                  </button>
-                </div>
+              <div class="w-full space-y-2">
+                <button
+                  v-for="qp in quickPrompts"
+                  :key="qp.label"
+                  @click="useQuickPrompt(qp.label)"
+                  class="w-full text-left px-4 py-3 text-[12px] bg-white hover:bg-brand-50/50 border border-border rounded-xl transition-all shadow-sm hover:shadow hover:border-brand/30 text-text-secondary group flex items-center justify-between"
+                >
+                  <span class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand/40 group-hover:bg-brand"></span>
+                    {{ qp.label }}
+                  </span>
+                  <svg class="w-3 h-3 text-border-dark group-hover:text-brand transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
               </div>
 
               <!-- 预设模板系统 -->
-              <div class="mt-4 rounded-xl border border-border bg-surface-secondary/60 p-2.5">
-                <div class="flex items-center justify-between mb-2">
-                  <div class="text-[11px] font-medium text-text-secondary">常用模板</div>
+              <div class="w-full mt-6 text-left">
+                <div class="flex items-center justify-between mb-3 px-1">
+                  <div class="text-[12px] font-medium text-text-primary">常用模板</div>
                   <span class="text-[10px] text-text-muted">点击自动填入</span>
                 </div>
-                <div class="flex flex-wrap gap-1.5 mb-2">
+                <div class="flex space-x-1 mb-3 bg-surface-secondary/50 p-1 rounded-lg">
                   <button
                     v-for="cat in presetPromptCategories"
                     :key="cat.key"
                     @click="activePromptCategory = cat.key"
-                    class="px-2 py-1 text-[11px] rounded-md border transition-all"
-                    :class="activePromptCategory === cat.key ? 'bg-white text-brand border-brand/40 shadow-sm' : 'bg-transparent text-text-muted border-transparent hover:bg-white hover:border-border'"
+                    class="flex-1 py-1.5 text-[11px] rounded-md transition-all font-medium"
+                    :class="activePromptCategory === cat.key ? 'bg-white text-brand shadow-sm' : 'text-text-muted hover:text-text-secondary'"
                   >
                     {{ cat.label }}
                   </button>
                 </div>
-                <div class="grid grid-cols-1 gap-1.5">
+                <div class="grid grid-cols-2 gap-2">
                   <button
                     v-for="tpl in activePresetPrompts"
                     :key="tpl.title"
                     @click="applyPresetPrompt(tpl.prompt)"
-                    class="text-left px-2.5 py-2 bg-white border border-border rounded-lg hover:border-brand/30 hover:bg-brand-50/50 transition-all"
+                    class="text-left px-3 py-2.5 bg-white border border-border rounded-xl hover:border-brand/30 hover:shadow-sm transition-all group"
                   >
-                    <div class="text-xs text-text-primary font-medium">{{ tpl.title }}</div>
-                    <div class="text-[11px] text-text-muted mt-0.5 line-clamp-1">{{ tpl.prompt }}</div>
+                    <div class="text-[11px] font-medium text-text-primary group-hover:text-brand transition-colors">{{ tpl.title }}</div>
                   </button>
                 </div>
               </div>

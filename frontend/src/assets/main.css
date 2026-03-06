@@ -67,43 +67,45 @@ body {
 .ProseMirror {
   outline: none;
   min-height: 500px;
-  color: #1A1A2E;
-  font-family: "Source Han Serif SC", "Noto Serif SC", Georgia, serif;
-  font-size: 16px;
-  line-height: 1.8;
+  color: #2D3142; /* 更柔和的深色，减轻阅读疲劳 */
+  font-family: "Source Han Serif SC", "Noto Serif SC", STZhongsong, "SimSun", serif; /* 增强衬线体回退 */
+  font-size: 18px; /* 提升字号，更适合沉浸式创作 */
+  line-height: 2.2; /* 增大行高，增加呼吸感 */
   padding: 2rem 0;
 }
 
 .ProseMirror p {
-  margin: 0.6em 0;
+  margin: 1.2em 0; /* 增大段间距 */
   text-indent: 2em;
+  letter-spacing: 0.02em; /* 略微增加字间距 */
 }
 
 .ProseMirror h1 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
-  margin: 1.5em 0 0.75em;
+  margin: 1.5em 0 0.8em;
   text-indent: 0;
-  color: #1A1A2E;
-  font-family: "Microsoft YaHei", sans-serif;
+  color: #111827;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  letter-spacing: 0.05em;
 }
 
 .ProseMirror h2 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  margin: 1.25em 0 0.5em;
+  margin: 1.2em 0 0.6em;
   text-indent: 0;
-  color: #1A1A2E;
-  font-family: "Microsoft YaHei", sans-serif;
+  color: #1F2937;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
 .ProseMirror h3 {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 600;
   margin: 1em 0 0.5em;
   text-indent: 0;
-  color: #333;
-  font-family: "Microsoft YaHei", sans-serif;
+  color: #374151;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
 .ProseMirror ul,
@@ -173,45 +175,54 @@ body {
 
 /* ====== 内联润色装饰（Copilot 风格红绿 diff） ====== */
 .polish-del {
-  background: rgba(255, 0, 0, 0.08);
+  background: rgba(239, 68, 68, 0.05); /* 更极浅的红色背景 */
   text-decoration: line-through;
-  text-decoration-color: rgba(220, 38, 38, 0.5);
-  color: #9ca3af;
-  border-radius: 2px;
+  text-decoration-color: rgba(239, 68, 68, 0.4);
+  color: #9CA3AF;
+  border-radius: 4px;
+  padding: 0 4px;
+  margin: 0 2px;
   transition: all 0.2s ease;
 }
 .polish-del-active {
-  background: rgba(255, 0, 0, 0.15);
+  background: rgba(239, 68, 68, 0.1);
   text-decoration: line-through;
-  text-decoration-color: #dc2626;
-  color: #dc2626;
-  border-radius: 2px;
-  outline: 2px solid rgba(220, 38, 38, 0.25);
-  outline-offset: 1px;
-  animation: polishHighlight 0.3s ease-out;
+  text-decoration-color: #EF4444;
+  color: #EF4444;
+  border-radius: 4px;
+  padding: 0 4px;
+  margin: 0 2px;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+  animation: polishHighlightDel 0.3s ease-out;
 }
 .polish-ins {
-  background: rgba(22, 163, 74, 0.08);
-  color: #86efac;
-  border-radius: 2px;
-  padding: 0 2px;
-  font-style: italic;
+  background: rgba(16, 185, 129, 0.06); /* 更柔和的绿色背景 */
+  color: #059669; /* 加深绿色，更适合白底阅读 */
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 2px;
+  border-bottom: 2px solid rgba(16, 185, 129, 0.3); /* 改为下划线标识而非全倾斜 */
   transition: all 0.2s ease;
 }
 .polish-ins-active {
-  background: rgba(22, 163, 74, 0.15);
-  color: #16a34a;
-  border-radius: 2px;
-  padding: 0 2px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 2px;
   font-weight: 500;
-  outline: 2px solid rgba(22, 163, 74, 0.25);
-  outline-offset: 1px;
-  animation: polishHighlight 0.3s ease-out;
+  border-bottom: 2px solid #10B981;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+  animation: polishHighlightIns 0.3s ease-out;
 }
 
-@keyframes polishHighlight {
-  0% { outline-width: 4px; outline-offset: 3px; opacity: 0.5; }
-  100% { outline-width: 2px; outline-offset: 1px; opacity: 1; }
+@keyframes polishHighlightDel {
+  0% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3); opacity: 0.5; }
+  100% { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2); opacity: 1; }
+}
+@keyframes polishHighlightIns {
+  0% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); opacity: 0.5; }
+  100% { box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2); opacity: 1; }
 }
 
 /* ==================== 滚动条 ==================== */
@@ -304,6 +315,11 @@ body {
   height: 8px;
   border-radius: 50%;
   background: #7C3AED;
+}
+
+/* ==================== 通用动画辅助 ==================== */
+.animation-delay-2000 {
+  animation-delay: 2s;
 }
 
 /* ==================== 侧边栏菜单项 ==================== */

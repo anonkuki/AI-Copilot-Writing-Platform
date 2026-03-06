@@ -132,8 +132,11 @@ describe('RagService', () => {
       });
       mockPrisma.embedding.findMany.mockResolvedValue([
         {
-          id: 'e1', sourceType: 'character', sourceId: 'c1',
-          content: '林渊', vector: JSON.stringify([0.9, 0.1, 0]),
+          id: 'e1',
+          sourceType: 'character',
+          sourceId: 'c1',
+          content: '林渊',
+          vector: JSON.stringify([0.9, 0.1, 0]),
           metadata: null,
         },
       ]);
@@ -160,14 +163,17 @@ describe('RagService', () => {
       });
       mockPrisma.embedding.findMany.mockResolvedValue([
         {
-          id: 'e1', sourceType: 'world_setting', sourceId: 'ws1',
-          content: '玄幻', vector: JSON.stringify([0.9, 0.1, 0]),
+          id: 'e1',
+          sourceType: 'world_setting',
+          sourceId: 'ws1',
+          content: '玄幻',
+          vector: JSON.stringify([0.9, 0.1, 0]),
           metadata: null,
         },
       ]);
 
       const results = await service.retrieve('book1', '任意查询');
-      const wsResults = results.filter(r => r.sourceId === 'ws1');
+      const wsResults = results.filter((r) => r.sourceId === 'ws1');
       expect(wsResults.length).toBe(1); // 去重后只有1个
     });
   });
@@ -242,7 +248,9 @@ describe('RagService', () => {
       });
 
       const result = await service.suggestForeshadowingResolution(
-        'book1', 'ch1', '他在暗室中发现了一枚古老的令牌',
+        'book1',
+        'ch1',
+        '他在暗室中发现了一枚古老的令牌',
       );
       // 应该有匹配（关键词 "令牌", "暗室" 都命中）
       expect(result.length).toBeGreaterThanOrEqual(0); // 取决于分词和向量相似度
@@ -261,11 +269,17 @@ describe('RagService', () => {
   describe('generateChapterSummary', () => {
     it('should generate and save summary', async () => {
       mockPrisma.chapter.findUnique.mockResolvedValue({
-        id: 'ch1', title: '第一章', content: 'X'.repeat(600), bookId: 'b1', order: 1,
+        id: 'ch1',
+        title: '第一章',
+        content: 'X'.repeat(600),
+        bookId: 'b1',
+        order: 1,
       });
 
       mockedAxios.post.mockResolvedValue({
-        data: { choices: [{ message: { content: '{"summary": "这是摘要", "keyEvents": ["事件1"]}' } }] },
+        data: {
+          choices: [{ message: { content: '{"summary": "这是摘要", "keyEvents": ["事件1"]}' } }],
+        },
       });
 
       mockPrisma.chapterSummary.upsert.mockResolvedValue({ id: 'cs1' });
@@ -284,7 +298,10 @@ describe('RagService', () => {
 
     it('should return empty for short content', async () => {
       mockPrisma.chapter.findUnique.mockResolvedValue({
-        id: 'ch1', title: '短章', content: '很短', bookId: 'b1',
+        id: 'ch1',
+        title: '短章',
+        content: '很短',
+        bookId: 'b1',
       });
       const result = await service.generateChapterSummary('ch1');
       expect(result).toBe('');
