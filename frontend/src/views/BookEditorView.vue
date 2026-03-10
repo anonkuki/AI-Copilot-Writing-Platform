@@ -252,6 +252,13 @@ function handleClosePanel() {
   activeRightPanel.value = null;
 }
 
+async function handleNavigateToChapter(chapterId: string) {
+  await refreshChapterList();
+  const chapters = bookStore.currentBook?.chapters || [];
+  const target = chapters.find((c: any) => c.id === chapterId);
+  if (target) await selectChapter(target);
+}
+
 // === 本地回滚栈 ===
 // 在 AI 操作修改内容前保存快照，允许一键回滚
 const contentSnapshots = ref<Array<{ content: string; label: string; timestamp: number }>>([]);
@@ -1287,6 +1294,7 @@ function goHome() { router.push('/'); }
               @refresh-chapters="refreshChapterList"
               @show-diff="handleShowDiff"
               @close-panel="handleClosePanel"
+              @navigate-to-chapter="handleNavigateToChapter"
             />
           </aside>
         </transition>

@@ -1179,6 +1179,7 @@ export const useAgentStore = defineStore('agent', () => {
     content: string,
     command: string,
     selectedText?: string,
+    userInstructions?: string,
   ) {
     agentStatus.value = { type: 'WRITER', status: 'thinking', message: 'AI 思考中...' };
     aiResult.value = '';
@@ -1192,6 +1193,7 @@ export const useAgentStore = defineStore('agent', () => {
         content,
         command,
         selectedText,
+        userInstructions,
       });
 
       const data = response.data.data as AgentResponse;

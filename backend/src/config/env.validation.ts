@@ -46,6 +46,9 @@ export function validateEnv(env: RawEnv) {
       30000,
       'SILICONFLOW_TIMEOUT_MS',
     ),
+    MINIMAX_API_KEY: env.MINIMAX_API_KEY || '',
+    MINIMAX_API_URL:
+      env.MINIMAX_API_URL || 'https://api.minimaxi.com/v1/chat/completions',
     CONTEXT_CACHE_TTL_MS: toInt(env.CONTEXT_CACHE_TTL_MS, 30000),
     JWT_SECRET: env.JWT_SECRET,
     DATABASE_URL: env.DATABASE_URL,

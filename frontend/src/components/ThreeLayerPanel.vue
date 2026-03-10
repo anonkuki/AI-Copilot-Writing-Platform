@@ -44,6 +44,7 @@ const emit = defineEmits<{
   (e: 'refreshChapters'): void;
   (e: 'showDiff', data: { oldContent: string; newContent: string }): void;
   (e: 'closePanel'): void;
+  (e: 'navigateToChapter', chapterId: string): void;
 }>();
 
 const agentStore = useAgentStore();
@@ -515,6 +516,37 @@ async function autoExecuteAction(action: { type: string; label: string; data: an
       const sIdx = agentStore.chatMessages.findIndex(m => m.id === statusMsgId);
       if (sIdx >= 0) agentStore.chatMessages.splice(sIdx, 1);
       await agentStore.analyzeFullText(props.bookId, analysisType);
+    } else if (action.type === 'create_chapter') {
+      const d = action.data;
+      const title = d.title || `第${(bookStore.currentBook?.chapters?.length || 0) + 1}章`;
+      try {
+        updateStatusMsg(statusMsgId, `正在创建章节「${title}」...`);
+        const chapter = await bookStore.createChapter(props.bookId, { title });
+        if (chapter) {
+          emit('refreshChapters');
+          emit('navigateToChapter', chapter.id);
+
+          if (d.generateContent && d.prompt) {
+            updateStatusMsg(statusMsgId, `章节「${title}」已创建，正在生成内容...`);
+            const result = await agentStore.runAgent(props.bookId, chapter.id, '', 'generate', undefined, d.prompt);
+            if (result?.result) {
+              const htmlContent = textToHtml(result.result);
+              await bookStore.saveChapter(chapter.id, { content: htmlContent });
+              emit('refreshChapters');
+              emit('navigateToChapter', chapter.id);
+              updateStatusMsg(statusMsgId, `章节「${title}」已创建并生成内容 (${result.result.length} 字)`);
+            } else {
+              updateStatusMsg(statusMsgId, `章节「${title}」已创建，但内容生成为空，请手动编写`);
+            }
+          } else {
+            updateStatusMsg(statusMsgId, `章节「${title}」已创建`);
+          }
+        } else {
+          updateStatusMsg(statusMsgId, `创建章节失败`);
+        }
+      } catch (err: any) {
+        updateStatusMsg(statusMsgId, `创建章节失败: ${err.message}`);
+      }
     } else {
       updateStatusMsg(statusMsgId, `未知的操作类型: ${action.type}`);
     }
