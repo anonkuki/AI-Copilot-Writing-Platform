@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 # AI+ 智能写作平台
@@ -622,7 +624,7 @@ npm run electron:build  # 打包 Electron 安装包（Windows NSIS）
 | `/ai/chat/stream` | POST | SSE 流式对话（基于文档上下文） |
 | `/ai/deep-think/stream` | POST | 深度思考流式对话（含推理过程） |
 | `/ai/polish/inline` | POST | Copilot 行内润色建议（SSE） |
-| `/ai/generate/continue` | POST | 多候选续写生成（SSE） |
+| `/ai/generate/continue` | POST | 多候选续写生成（JSON） |
 | `/ai/orchestrate/stream` | POST | 多步编排流式执行 |
 | `/ai/tool-analysis/stream` | POST | 校对/拼字/灵感/润色工具分析（SSE） |
 | `/ai/analyze/stream` | POST | 全文分析（伏笔/角色弧线/节奏/综合）（SSE） |
